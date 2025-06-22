@@ -15,6 +15,6 @@ class BaseModelConfig:
         self.V = fe.FunctionSpace(self.mesh, "Lagrange", 1)
 
     def set_ics(self):
-        h_init = fe.interpolate(fe.Expression("10* exp(-pow( (x - L/2)/10 , 2))", L = self.L, degree = 2), self.V)
+        h_init = fe.interpolate(fe.Expression("10* exp(-pow( (x[0] - L/2)/10 , 2))", L = self.L, degree = 2), self.V)
 
         return h_init
