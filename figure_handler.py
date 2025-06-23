@@ -16,10 +16,11 @@ class FigureHandler:
 
     def height_profile(self, h_solutions, timestamps, savefig = False):
         plt.figure()
-        x = self.config.mesh.coordinates().flatten
+        x = self.config.mesh.coordinates().flatten()
 
         for t in timestamps:
-            plt.plot(x, h_solutions[t], label = f'Time = {t}')
+            h_temp = h_solutions[t].compute_vertex_values(self.config.mesh)
+            plt.plot(x, h_temp, label = f'Time = {t}')
 
         plt.xlabel('x')
         plt.ylabel('h')
