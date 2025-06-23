@@ -3,16 +3,16 @@ import fenics as fe
 #import numpy as np may needed later
 
 class BaseModelConfig:
-    def __init__(self, grid = 100, domain_length = 25, num_steps = 50, final_time = 10, Q = 1):
+    def __init__(self, nx = 1001, domain_length = 50, num_steps = 50, final_time = 10, Q = 1):
 
-        self.nx = grid
-        self.L = domain_length
-        self.num_steps = num_steps
-        self.T = final_time
-        self.dt = self.T / self.num_steps
-        self.Q = Q
-        self.mesh = fe.IntervalMesh(self.nx, 0, self.L)
-        self.V = fe.FunctionSpace(self.mesh, "Lagrange", 1)
+        self.nx = nx                     # division of interval
+        self.L = domain_length             # interval length [0,L]
+        self.num_steps = num_steps         # number of time steps
+        self.T = final_time                # time interval [0,T]
+        self.dt = self.T / self.num_steps  # time step size
+        self.Q = Q                         # osmotic mobility coefficient
+        self.mesh = fe.IntervalMesh(self.nx, 0, self.L)      # definition of mesh
+        self.V = fe.FunctionSpace(self.mesh, "Lagrange", 1)  # definition of function space
 
         self.h_options = {
             "constant": fe.Constant(1),
