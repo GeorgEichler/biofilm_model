@@ -6,14 +6,14 @@ import figure_handler as fh
 
 
 def f(h):
-    h = h + fe.Constant(1e-6)
+    h = h + fe.Constant(1e-8)
     return - 1/h**6 + 1/h**3 - fe.div(fe.grad(h))
 
 config = cfg.BaseModelConfig()
 figure_handler = fh.FigureHandler(config)
 
 #Initial condition
-h_k = config.set_ics()
+h_k = config.set_ics("constant")
 h_0 = h_k.copy(deepcopy = True)
 
 #Weak formulation
@@ -23,14 +23,23 @@ h = fe.Function(config.V)
 # Thin-film equation
 fh = f(h) #is treated as a symbolic expression afterwards 
 F = ( (h - h_k) / config.dt ) * v * fe.dx \
-    + fe.inner(h**3 * fe.grad(fh), fe.grad(v)) * fe.dx \
-    + config.Q * fh * v * fe.dx
+    + fe.inner(h**3 * fe.grad(fh), fe.grad(v)) * fe.dx #\
+    #+ config.Q * fh * v * fe.dx
 
 J = fe.derivative(F, h)
 
 # Set up solver
 problem = fe.NonlinearVariationalProblem(F, h, J = J)
 solver = fe.NonlinearVariationalSolver(problem)
+
+# Change Newton solver parameters
+prm = solver.parameters["newton_solver"]
+prm["absolute_tolerance"] = 1e-8
+prm["relative_tolerance"] = 1e-7
+prm["maximum_iterations"] = 50
+prm["relaxation_parameter"] = 0.7
+prm["error_on_nonconvergence"] = True
+prm["report"] = True
 
 iterates = [h_0]
 
@@ -39,7 +48,7 @@ for i in range(config.num_steps):
     h_k.assign(h)
     iterates.append(h_k.copy(deepcopy=True))
 
-timestamps = [0, config.num_steps - 1]
+timestamps = [0, config.num_steps]
 
 figure_handler.height_profile(iterates, timestamps)
 plt.show()
