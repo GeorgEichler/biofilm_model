@@ -18,11 +18,16 @@ class FigureHandler:
         plt.figure()
         x = self.config.mesh.coordinates().flatten()
 
+        solutions_path = "output"
+
         for t in timestamps:
             h_temp = h_solutions[t].compute_vertex_values(self.config.mesh)
-            plt.plot(x, h_temp, label = f'Time = {t}')
+            time = t * self.config.T / self.config.num_steps
+            plt.plot(x, h_temp, label = f'Time = {time}')
 
         plt.xlabel('x')
         plt.ylabel('h')
         plt.legend()
         plt.title('Height profile')
+        if savefig:
+            plt.savefig(f"{solutions_path}/simple_height_profile.png")
