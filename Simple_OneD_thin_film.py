@@ -3,6 +3,7 @@ import ufl #needed to use exp, tanh etc. function for fenics code
 import config as cfg
 
 def f(h):
+    h = h + fe.Constant(1e-6)
     return - 1/h**6 + 1/h**3 - fe.div(fe.grad(h))
 
 config = cfg.BaseModelConfig()
