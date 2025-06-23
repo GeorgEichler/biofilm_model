@@ -14,7 +14,12 @@ class BaseModelConfig:
         self.mesh = fe.IntervalMesh(self.nx, 0, self.L)
         self.V = fe.FunctionSpace(self.mesh, "Lagrange", 1)
 
-    def set_ics(self):
-        h_init = fe.interpolate(fe.Expression("10* exp(-pow( (x[0] - L/2)/10 , 2))", L = self.L, degree = 2), self.V)
+        self.h_options = {
+            "constant": fe.Constant(1),
+            "gaussian": fe.Expression("10* exp(-pow( (x[0] - L/2)/10 , 2))", L = self.L, degree = 2)
+        }
+
+    def set_ics(self, h_option):
+        h_init = fe.interpolate(self.h_options[h_option], self.V)
 
         return h_init
