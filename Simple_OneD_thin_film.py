@@ -17,7 +17,7 @@ figure_handler = fh.FigureHandler(config)
 V = fe.FunctionSpace(config.mesh, "Lagrange", 1) # Space for h
 W = fe.FunctionSpace(config.mesh, "Lagrange", 1) # Space for w
 element = fe.MixedElement([V.ufl_element(), W.ufl_element()])
-VW = fe.FunctionSpace(config.mesh, element)
+VW = fe.FunctionSpace(config.mesh, element) # Function space where elements have a pair of values at each nodes
 
 # Initial Conditions
 h0_expr = fe.Expression("1.0 + 0.1*sin(2*pi*x[0]/L)", L=config.L, degree=2)
@@ -30,7 +30,7 @@ vw_test = fe.TestFunction(W)
 a_w = w_trial * vw_test * fe.dx
 L_w = -fe.dot(fe.grad(h0), fe.grad(vw_test)) * fe.dx
 w0 = fe.Function(W)
-fe.solve(a_w == L_w, w0)
+fe.solve(a_w == L_w, w0) # Relate w0 to h0 by w = \Delta h
 
 # Set up functions for time-stepping
 # H_k holds the solution (h, w) from the previous step
@@ -42,7 +42,7 @@ fe.assign(H_k, [fe.interpolate(h0, V), fe.interpolate(w0, W)])
 H = fe.Function(VW)
 
 # --- Variational Problem Definition ---
-(h, w) = fe.split(H)
+(h, w) = fe.split(H) # split the coordinates by projecting to the according coordinates
 (h_k_split, w_k_split) = fe.split(H_k) # Use the components of H_k in the form
 (vh, vw) = fe.TestFunctions(VW)
 
