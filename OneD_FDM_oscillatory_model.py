@@ -26,6 +26,7 @@ k = 2*np.pi
 # Initial conditions
 h_init = np.ones_like(x)
 h_init = 0.2 + 0.5 * np.exp(-(x - L/2)**2/0.1)
+#h_init = 0.1 - 0.001 * (x - L/2)**2
 
 # Second derivative with Neumann boundary conditions
 main_diag = -2.0 * np.ones(N)
