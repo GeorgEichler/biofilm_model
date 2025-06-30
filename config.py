@@ -26,7 +26,7 @@ class JonesPotentialModelConfig:
 
 class OscillatoryModelConfig:
     def __init__(self, nx = 1001, domain_length = 100, num_steps = 50, final_time = 10,
-                 mobility_coefficient = 1, surface_tension = 1, growth_rate = 1):
+                 mobility_coefficient = 1, surface_tension = 1, growth_rate = 1, h0 = 0.1):
         self.nx = nx
         self.L = domain_length
         self.num_steps = num_steps
@@ -34,6 +34,7 @@ class OscillatoryModelConfig:
         self.D = mobility_coefficient
         self.gamma = surface_tension
         self.g = growth_rate
+        self.h0 = h0
         self.dt = self.T/self.num_steps
 
         self.mesh = fe.IntervalMesh(self.nx, 0, self.L)
