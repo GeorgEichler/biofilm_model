@@ -4,7 +4,7 @@ import config as cfg
 import figure_handler as fh
 
 # --- Configuration ---
-config = cfg.BaseModelConfig(
+config = cfg.JonesPotentialModelConfig(
     nx=501,
     domain_length=100,
     num_steps=100,

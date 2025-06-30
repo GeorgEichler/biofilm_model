@@ -2,7 +2,7 @@ import fenics as fe
 #import ufl
 #import numpy as np may needed later
 
-class BaseModelConfig:
+class JonesPotentialModelConfig:
     def __init__(self, nx = 1001, domain_length = 50, num_steps = 50, final_time = 10, Q = 1):
 
         self.nx = nx                     # division of interval
@@ -23,3 +23,4 @@ class BaseModelConfig:
         h_init = fe.interpolate(self.h_options[h_option], self.V)
 
         return h_init
+
