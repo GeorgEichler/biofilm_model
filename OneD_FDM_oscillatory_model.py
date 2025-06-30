@@ -8,7 +8,7 @@ L = 10
 N = 100
 dx = L/N
 x = 0 + (np.arange(1, N + 1) - 0.5)*dx # cell-centred staggered grid
-T = 10
+T = 1
 num_steps = 100
 dt = T/num_steps
 t_eval = np.linspace(0, T, num_steps + 1)
@@ -33,14 +33,14 @@ D[0, 0:2] = np.array([-1, 1]) / (2 * dx)
 D[-1, -2:] = np.array([-1, 1]) / (2 * dx)  
 
 def Pi1(a, b, c, d, k, h):
-    return a * np.exp(-h/c) (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/(2*c)*np.exp(-h/(2*c))
+    return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/(2*c)*np.exp(-h/(2*c))
 
 # RHS of thin film equation, assumes h to be a numpy array
 def rhs_thin_film_eq(t, h):
     h_xx = Laplacian @ h
     f = -Pi1(1, 1, 1, 1, 1, h) - gamma * h_xx
     f_x =  D @ f
-    flux = D @ (D * f_x)
+    flux = D @ (Dif * f_x)
     source = g * h * (h0 - h)
     return flux + source
 
