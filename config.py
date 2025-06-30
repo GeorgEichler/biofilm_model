@@ -19,8 +19,8 @@ class JonesPotentialModelConfig:
             "gaussian": fe.Expression("10* exp(-pow( (x[0] - L/2)/10 , 2))", L = self.L, degree = 2)
         }
 
-    def set_ics(self, h_option):
-        h_init = fe.interpolate(self.h_options[h_option], self.V)
+    def set_ics(self, h_option, target_space):
+        h_init = fe.interpolate(self.h_options[h_option], target_space)
 
         return h_init
 
@@ -44,7 +44,7 @@ class OscillatoryModelConfig:
             "constant": fe.Constant(1)
         }
 
-    def set_ics(self, h_option = None, h_init = None):
+    def set_ics(self, h_option, target_space):
 
         if isinstance(h_option, str):
             try:
@@ -52,23 +52,17 @@ class OscillatoryModelConfig:
             except KeyError:
                 raise ValueError(f"Unknown h_option '{h_option}'")
             
-            else:
-                expr = h_option
+        else:
+            # assuming it is an Expression already
+            expr = h_option
 
-            return fe.interpolate(expr, self.V)
+        return fe.interpolate(expr, target_space)
 
-        h_init = fe.interpolate(self.h_options[h_option], self.V)
-
-        return h_init
     
     # binding potential g_1
     # g_1(h) &= a \cos(hk + b)e^{-h/c} + d e^{-h/(2c)}
     def disjoining_pressure1(self, a, b, c, d, k, h):
-       a = ufl.Constant(a)
-       b = ufl.Constant(b)
-       c = ufl.Constant(c)
-       d = ufl.Constant(d)
-       k = ufl.Constant(k)
+
        return  a * ufl.exp(-h/c) * (k * ufl.sin(k*h + b) + 1/c * ufl.cos(k * h + b)) \
                + d/(2*c) * ufl.exp(-h/(2*c))
     
