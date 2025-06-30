@@ -35,6 +35,9 @@ D[-1, -2:] = np.array([-1, 1]) / (2 * dx)
 def Pi1(a, b, c, d, k, h):
     return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/(2*c)*np.exp(-h/(2*c))
 
+def Pi2(a, b, c, d, k, h):
+    return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + (2*d)/(c)*np.exp(-(2*h)/(c))
+
 # RHS of thin film equation, assumes h to be a numpy array
 def rhs_thin_film_eq(t, h):
     h_xx = Laplacian @ h
