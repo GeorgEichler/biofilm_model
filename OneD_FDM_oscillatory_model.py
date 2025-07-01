@@ -28,17 +28,23 @@ h_init = np.ones_like(x)
 h_init = 0.5 + 5 * np.exp(-(x - L/2)**2/0.1)
 #h_init = 0.1 - 0.001 * (x - L/2)**2
 
-# Second derivative with Neumann boundary conditions
+# First derivative with periodic boundary conditions
+D = diags([-1, 0, 1], [-1, 0, 1], shape=(N, N)).toarray() / (2 * dx)
+D[0, :] = 0 
+D[0, 1] = 1 /(2 * dx)
+D[0, -1] = -1 /(2 * dx)
+
+D[-1, :] = 0
+D[-1, 0] = 1 / (2 * dx)
+D[-1, -2] = -1 / (2 * dx)
+
+# Second derivative with periodic boundary conditions
 main_diag = -2.0 * np.ones(N)
 off_diag = np.ones(N - 1)
 Laplacian = diags([off_diag, main_diag, off_diag], [-1, 0 , 1]).toarray() / dx**2
-Laplacian[0, 0:2] = np.array([-1, 1]) / dx**2
-Laplacian[-1, -2:] = np.array([1, -1]) / dx**2
+Laplacian[0, -1] = 1 / (dx**2)
+Laplacian[-1, 0] = 1 / (dx**2)
 
-# First derivative with Neumann boundary conditions
-D = diags([-1, 0, 1], [-1, 0, 1], shape=(N, N)).toarray() / (2 * dx)
-D[0, 0:2] = np.array([-1, 1]) / (2 * dx) 
-D[-1, -2:] = np.array([-1, 1]) / (2 * dx)  
 
 def g1(a, b, c, d, k, h):
     return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-h/(2*c))
