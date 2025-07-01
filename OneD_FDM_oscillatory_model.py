@@ -14,10 +14,10 @@ t_eval = np.linspace(0, T, num_steps + 1)
 Q = 0.5 # diffusion coefficient
 gamma = 0.1 # surface tension
 h0 = 0.21 # precursor film height
-g = 1    # growth term
+g = 0    # growth term
 
 # Parameters for binding potential
-a = 0.01
+a = 0.1
 b = np.pi/2
 c = 1
 d = 0
@@ -25,7 +25,7 @@ k = 2*np.pi
 
 # Initial conditions
 h_init = np.ones_like(x)
-#h_init = 0.5 + 0.5 * np.exp(-(x - L/2)**2/0.01)
+h_init = 0.5 + 5 * np.exp(-(x - L/2)**2/0.1)
 #h_init = 0.1 - 0.001 * (x - L/2)**2
 
 # Second derivative with Neumann boundary conditions
