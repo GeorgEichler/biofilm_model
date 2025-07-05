@@ -7,6 +7,14 @@ class FigureHandler:
     """
     def __init__(self, model):
         self.model = model
+        plt.rcParams.update({
+            "axes.titlesize": 18,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 14,
+            "figure.dpi": 100 #change resolution, standard is 100
+        })
 
     def plot_binding_energy(self, g, h_min = 0, h_max = 10, nh = 1001):
         h_array = np.linspace(h_min, h_max, nh)
