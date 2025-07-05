@@ -4,6 +4,7 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from config import OneDConfig
 import figure_handler as fh
+import time
 
 class OneD_Thin_Film_Model:
     """
@@ -26,25 +27,18 @@ class OneD_Thin_Film_Model:
         self.x = (np.arange(1, N + 1) - 0.5) * self.dx
 
         # First derivative with periodic boundary conditions
-        D = diags([-1, 0, 1], [-1, 0, 1], shape=(N, N)).toarray() / (2 * self.dx)
-        D[0, :] = 0 
-        D[0, 1] = 1 /(2 * self.dx)
-        D[0, -1] = -1 /(2 * self.dx)
+        D = diags(diagonals=[-1,1], offsets=[-1,1], shape=(N, N), format= 'lil')
+        D[0, -1] = -1
+        D[-1, 0] = 1
 
-        D[-1, :] = 0
-        D[-1, 0] = 1 / (2 * self.dx)
-        D[-1, -2] = -1 / (2 * self.dx)
-
-        self.D = D
+        self.D = (D / (2 * self.dx)).asformat('csr')
 
         # Second derivative with periodic boundary conditions
-        main_diag = -2.0 * np.ones(N)
-        off_diag = np.ones(N - 1)
-        Laplacian = diags([off_diag, main_diag, off_diag], [-1, 0 , 1]).toarray() / self.dx**2
-        Laplacian[0, -1] = 1 / (self.dx**2)
-        Laplacian[-1, 0] = 1 / (self.dx**2)
+        Laplacian = diags(diagonals=[1,-2,1], offsets=[-1,0,1], shape = (N, N), format = 'lil')
+        Laplacian[0, -1] = 1
+        Laplacian[-1, 0] = 1
 
-        self.Laplacian = Laplacian
+        self.Laplacian = (Laplacian / (self.dx**2)).asformat('csr')
 
     def _setup_initial_conditions(self):
         L = self.params['L']
@@ -98,7 +92,7 @@ class OneD_Thin_Film_Model:
 
 
 if __name__ == "__main__":
-
+    start = time.time()
     config = OneDConfig()
     model = OneD_Thin_Film_Model(config)
 
@@ -106,5 +100,7 @@ if __name__ == "__main__":
 
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H, times)
+    end = time.time()
+    print(f"Run time: {end - start}")
 
     plt.show()
