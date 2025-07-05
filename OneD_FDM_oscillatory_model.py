@@ -17,7 +17,6 @@ class OneD_Thin_Film_Model:
 
 
         self._setup_grid_and_operators()
-        self._setup_initial_conditions()
 
     def _setup_grid_and_operators(self):
         N = self.params['N']
@@ -40,16 +39,17 @@ class OneD_Thin_Film_Model:
 
         self.Laplacian = (Laplacian / (self.dx**2)).asformat('csr')
 
-    def _setup_initial_conditions(self):
+    def setup_initial_conditions(self, init_type):
         L = self.params['L']
-        init_type = self.params['h_init_type']
 
         if init_type == 'gaussian':
-            self.h_init = 0.5 + 5 * np.exp(-(self.x - L/2)**2/0.1)
+            h_init = 0.5 + 5 * np.exp(-(self.x - L/2)**2/0.1)
         elif init_type == 'constant':
-            self.h_init = np.ones_like(self.x)
+            h_init = np.ones_like(self.x)
         else:
             raise ValueError(f"Unknown initial condition type: {init_type}")
+        
+        return h_init
 
     @staticmethod
     def g1(a, b, c, d, k, h):
@@ -96,7 +96,8 @@ if __name__ == "__main__":
     config = OneDConfig()
     model = OneD_Thin_Film_Model(config)
 
-    times, H = model.solve(model.h_init)
+    h_init = model.setup_initial_conditions('gaussian')
+    times, H = model.solve(h_init)
 
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H, times)

@@ -23,8 +23,7 @@ class OneDConfig:
         # Default values
         self.params = {
             'L': 10, 'N': 1000, 'Q': 0.5, 'gamma': 0.1, 'h_max': 0.5, 'g': 0.1,
-            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.0, 'k': 2*np.pi,
-            'h_init_type': 'gaussian'
+            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.0, 'k': 2*np.pi
         }
 
         # Update parameters with possible user-provided arguments
