@@ -2,7 +2,6 @@ import numpy as np
 from scipy.sparse import diags
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
-from config import OneDConfig
 import figure_handler as fh
 import time
 
@@ -11,10 +10,27 @@ class OneD_Thin_Film_Model:
     A class to set up a one dimensional thin-film equation model
     """
 
-    def __init__(self, config: OneDConfig):
-        self.config = config
-        self.params = config.params
+    def __init__(self, **kwargs):
+        """
+        Kwargs:
+            L (float): Domain length [0, L]
+            N (int): Number of grid points
+            Q (float): Diffusion coefficient
+            gamma (float): Surface tension
+            h_max (float): maximal film height for the growth term
+            g (float): growth coefficient
+            a, b, c, d, k (float): Parameter for the binding potential
+            h_init_type (str): Type of inital condition
+        """
+        
+        # Default values
+        self.params = {
+            'L': 10, 'N': 1000, 'Q': 0.5, 'gamma': 0.1, 'h_max': 5, 'g': 0.1,
+            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.0, 'k': 2*np.pi
+        }
 
+        # Update parameters with possible user-provided arguments
+        self.params.update(kwargs)
 
         self._setup_grid_and_operators()
 
@@ -77,7 +93,7 @@ class OneD_Thin_Film_Model:
     def rhs(self, t, h):
         p = self.params
         h_xx = self.Laplacian @ h 
-        mu = - self.Pi1(p['a'], p['b'], p['c'], p['d'], p['k'], h) - p['gamma'] * h_xx
+        mu =   - self.Pi1(p['a'], p['b'], p['c'], p['d'], p['k'], h) - p['gamma'] * h_xx
         mu_x = self.D @ mu
         flux = self.D @ (p['Q'] * mu_x)
         source = p['g'] * h * (1 - h/ p['h_max'])
@@ -93,8 +109,7 @@ class OneD_Thin_Film_Model:
 
 if __name__ == "__main__":
     start = time.time()
-    config = OneDConfig()
-    model = OneD_Thin_Film_Model(config)
+    model = OneD_Thin_Film_Model()
 
     h_init = model.setup_initial_conditions('gaussian')
     times, H = model.solve(h_init)
