@@ -211,6 +211,6 @@ model = OneD_Thin_Film_Model(config)
 
 times, H = model.solve(model.h_init)
 
-figure_handler = fh.FigureHandler()
-figure_handler.plot_profiles(model.x, H, times)
+figure_handler = fh.FigureHandler(model)
+figure_handler.plot_profiles(H, times)
 plt.show()
