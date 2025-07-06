@@ -67,20 +67,24 @@ class OneD_Thin_Film_Model:
         
         return h_init
 
-    @staticmethod
-    def g1(a, b, c, d, k, h):
+    def g1(self, h):
+        p = self.params
+        a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-h/(2*c))
 
-    @staticmethod
-    def g2(a, b, c, d, k, h):
+    def g2(self, h):
+        p = self.params
+        a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-2*h/c)
 
-    @staticmethod
-    def Pi1(a, b, c, d, k, h):
+    def Pi1(self, h):
+        p = self.params
+        a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/(2*c)*np.exp(-h/(2*c))
 
-    @staticmethod
-    def Pi2(a, b, c, d, k, h):
+    def Pi2(self, h):
+        p = self.params
+        a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + (2*d)/(c)*np.exp(-(2*h)/(c))
     
     def free_energy(self, h):
@@ -93,7 +97,7 @@ class OneD_Thin_Film_Model:
     def rhs(self, t, h):
         p = self.params
         h_xx = self.Laplacian @ h 
-        mu =   - self.Pi1(p['a'], p['b'], p['c'], p['d'], p['k'], h) - p['gamma'] * h_xx
+        mu =   - self.Pi1(h) - p['gamma'] * h_xx
         mu_x = self.D @ mu
         flux = self.D @ (p['Q'] * mu_x)
         source = p['g'] * h * (1 - h/ p['h_max'])
@@ -116,6 +120,7 @@ if __name__ == "__main__":
 
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H, times)
+    figure_handler.plot_binding_energy(model.g1)
     end = time.time()
     print(f"Run time: {end - start}")
 
