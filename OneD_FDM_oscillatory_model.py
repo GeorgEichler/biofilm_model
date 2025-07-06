@@ -25,8 +25,8 @@ class OneD_Thin_Film_Model:
         
         # Default values
         self.params = {
-            'L': 10, 'N': 1000, 'Q': 0.5, 'gamma': 0.1, 'h_max': 5, 'g': 0.1,
-            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.0, 'k': 2*np.pi
+            'L': 50, 'N': 1000, 'Q': 0.5, 'gamma': 0.1, 'h_max': 5, 'g': 0.1,
+            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': -0.02, 'k': 2*np.pi
         }
 
         # Update parameters with possible user-provided arguments
