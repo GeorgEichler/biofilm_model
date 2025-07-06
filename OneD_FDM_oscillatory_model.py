@@ -91,7 +91,7 @@ class OneD_Thin_Film_Model:
         """Calculates the free energy functional F[h]."""
         p = self.params
         dhdx = self.D @ h
-        integrand = 0.5 * p['gamma'] * dhdx**2 + self.g1(h, p['a'], p['b'], p['c'], p['d'], p['k'])
+        integrand = 0.5 * p['gamma'] * dhdx**2 + self.g1(h)
         return np.sum(integrand) * self.dx
 
     def rhs(self, t, h):
