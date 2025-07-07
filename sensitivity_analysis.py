@@ -64,7 +64,7 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
         final_profiles[label] = H[:, 0]
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax.plot(x_grid, h_init, label = '$h_0$')
+    ax.plot(x_grid, h_init, 'k--', label = '$h_0$')
 
     for label, h_final in final_profiles.items():
         ax.plot(x_grid, h_final, label=label, lw = 2) # lw adjusts the line width
@@ -81,8 +81,9 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
     plt.show()
 
 if __name__ == "__main__":
-    d_values = {'d': [-0.02, 0, 0.02]}
-    param_sets = create_parameter_grid(d_values)
+    param_values = {'Q': [0.1, 1, 10],
+                    'g': [0.1, 1, 10]}
+    param_sets = create_parameter_grid(param_values)
     run_sensitivity_analysis(
         param_sets=param_sets,
         T = 10
