@@ -38,10 +38,16 @@ class FigureHandler:
         plt.grid(True)
 
     def plot_free_energy(self, H, times):
-        F_values = [self.model.free_energy(H[:,i]) for i in range(len(times))]
+        # Convert to numpy array to use slice operations
+        energy_values = np.array([self.model.free_energy(H[:,i]) for i in range(len(times))])
+        surface_values = energy_values[:, 0]
+        potential_values = energy_values[:, 1]
         plt.figure()
-        plt.plot(times, F_values, '-o')
+        plt.plot(times, surface_values, '--', label = 'Surface energy')
+        plt.plot(times, potential_values, '--', label = "Potential energy")
+        plt.plot(times, surface_values + potential_values, '-o', label = "Total energy")
         plt.xlabel('t')
         plt.ylabel('F[h(t)]')
         plt.title('Free energy evolution')
         plt.grid(True)
+        plt.legend()

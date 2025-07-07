@@ -91,11 +91,17 @@ class OneD_Thin_Film_Model:
         return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + (2*d)/(c)*np.exp(-(2*h)/(c))
     
     def free_energy(self, h):
-        """Calculates the free energy functional F[h]."""
+        """Calculates the free energy functional F[h]
+        Args:
+            h (np.ndarray): array of height thickness
+        Returns:
+            Contribution of surface and potential energy
+        """
         p = self.params
         dhdx = self.D @ h
-        integrand = 0.5 * p['gamma'] * dhdx**2 + self.g1(h)
-        return np.sum(integrand) * self.dx
+        surface_energy = 0.5 * p['gamma'] * dhdx**2
+        potential = self.g1(h)
+        return [np.sum(surface_energy) * self.dx, np.sum(potential) * self.dx]
 
     # Right hand side of PDE
     def rhs(self, t, h):
@@ -153,7 +159,7 @@ def find_first_k_minima(k_minima, f, range = [0,10], num_points = 1000):
 if __name__ == "__main__":
     start = time.time()
     params = {'g': 0, 'Q': 5}
-    T = 100
+    T = 50
     model = OneD_Thin_Film_Model(**params)
     t_eval = np.linspace(0, T, 101)
     t_plot = np.linspace(0, T, 5)
