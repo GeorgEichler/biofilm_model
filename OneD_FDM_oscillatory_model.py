@@ -56,6 +56,7 @@ class OneD_Thin_Film_Model:
 
         self.Laplacian = (Laplacian / (self.dx**2)).asformat('csr')
 
+    # Pre-defined initial conditions
     def setup_initial_conditions(self, init_type):
         L = self.params['L']
 
@@ -68,6 +69,7 @@ class OneD_Thin_Film_Model:
         
         return h_init
 
+    # Define binding energies and corresponding disjoint pressures
     def g1(self, h):
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
@@ -95,6 +97,7 @@ class OneD_Thin_Film_Model:
         integrand = 0.5 * p['gamma'] * dhdx**2 + self.g1(h)
         return np.sum(integrand) * self.dx
 
+    # Right hand side of PDE
     def rhs(self, t, h):
         p = self.params
         h_xx = self.Laplacian @ h 
