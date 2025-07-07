@@ -47,7 +47,7 @@ class FigureHandler:
         plt.plot(times, potential_values, '--', label = "Potential energy")
         plt.plot(times, surface_values + potential_values, '-o', label = "Total energy")
         plt.xlabel('t')
-        plt.ylabel('F[h(t)]')
+        plt.ylabel('E')
         plt.title('Free energy evolution')
         plt.grid(True)
         plt.legend()
