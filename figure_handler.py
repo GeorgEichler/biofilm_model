@@ -24,12 +24,24 @@ class FigureHandler:
         plt.ylabel('g(h)')
         plt.title('Binding potential')
 
-    def plot_profiles(self, H, times):
+    def plot_profiles(self, H, times, pot_minima = None):
         x = self.model.x # get grid of model
         plt.figure()
         for h, t in zip(H.T, times):
             plt.plot(x, h, label=f't={t:.2f}')
+        if pot_minima is not None:
+            for y in pot_minima:
+                plt.hlines(y, xmin=x[0], xmax=x[-1], linestyles='dashed')
         plt.xlabel('x')
         plt.ylabel('h(x,t)')
         plt.legend()
+        plt.grid(True)
+
+    def plot_free_energy(self, H, times):
+        F_values = [self.model.free_energy(H[:,i]) for i in range(len(times))]
+        plt.figure()
+        plt.plot(times, F_values, '-o')
+        plt.xlabel('t')
+        plt.ylabel('F[h(t)]')
+        plt.title('Free energy evolution')
         plt.grid(True)
