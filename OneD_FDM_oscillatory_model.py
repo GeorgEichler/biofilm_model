@@ -65,10 +65,11 @@ class OneD_Thin_Film_Model:
         L = self.params['L']
 
         if init_type == 'gaussian':
-            #h_init = 0.5 + 5 * np.exp(-(self.x - L/2)**2/0.1)
-            h_init = 0.22 + 0.1 * np.exp(-(self.x - L/2)**2/10)
+            h_init = (self.h0 + 0.01) + 5 * np.exp(-(self.x - L/2)**2/0.1)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
+        elif init_type == 'bump':
+            h_init = self.h0 + 0.1 * np.exp(-(self.x - L/2)**2/10)
         else:
             raise ValueError(f"Unknown initial condition type: {init_type}")
         
@@ -180,7 +181,7 @@ if __name__ == "__main__":
     figure_handler.plot_profiles(H, t_plot, pot_minima=h_mins)
     figure_handler.plot_binding_energy(model.g1)
 
-    print(f"Minima of $g_1$ are found at {h_mins} \n with values {g1_mins}.")
+    print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     figure_handler.plot_free_energy(H, times)
     end = time.time()
     print(f"Run time: {end - start}")
