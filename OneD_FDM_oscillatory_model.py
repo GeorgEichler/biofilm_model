@@ -26,7 +26,7 @@ class OneD_Thin_Film_Model:
         
         # Default values
         self.params = {
-            'L': 50, 'N': 1000, 'Q': 0.5, 'gamma': 0.1, 'h_max': 5, 'g': 0.1,
+            'L': 50, 'N': 1000, 'Q': 1, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
             'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi
         }
 
@@ -34,6 +34,10 @@ class OneD_Thin_Film_Model:
         self.params.update(kwargs)
 
         self._setup_grid_and_operators()
+
+        # Calulate the first minima of the binding potential
+        min, _ = find_first_k_minima(1, self.g1)
+        self.h0 = min[0]
 
     def _setup_grid_and_operators(self):
         N = self.params['N']
@@ -61,7 +65,8 @@ class OneD_Thin_Film_Model:
         L = self.params['L']
 
         if init_type == 'gaussian':
-            h_init = 0.5 + 5 * np.exp(-(self.x - L/2)**2/0.1)
+            #h_init = 0.5 + 5 * np.exp(-(self.x - L/2)**2/0.1)
+            h_init = 0.22 + 0.1 * np.exp(-(self.x - L/2)**2/10)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
         else:
@@ -110,7 +115,7 @@ class OneD_Thin_Film_Model:
         mu =   - self.Pi1(h) - p['gamma'] * h_xx
         mu_x = self.D @ mu
         flux = self.D @ (p['Q'] * mu_x)
-        source = p['g'] * h * (1 - h/ p['h_max'])
+        source = p['g'] * (h - self.h0) * (1 - (h - self.h0) / p['h_max'])
 
         return flux + source
 
@@ -158,10 +163,10 @@ def find_first_k_minima(k_minima, f, range = [0,10], num_points = 1000):
 
 if __name__ == "__main__":
     start = time.time()
-    params = {'g': 0, 'Q': 5}
-    T = 50
+    params = {'a': 1, 'gamma': 0.5}
+    T = 10
     model = OneD_Thin_Film_Model(**params)
-    t_eval = np.linspace(0, T, 101)
+    t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
     h_init = model.setup_initial_conditions('gaussian')
@@ -169,7 +174,7 @@ if __name__ == "__main__":
 
     figure_handler = fh.FigureHandler(model)
     h_mins, g1_mins = find_first_k_minima(
-        k_minima=2, 
+        k_minima=5, 
         f = model.g1
     )
     figure_handler.plot_profiles(H, t_plot, pot_minima=h_mins)
