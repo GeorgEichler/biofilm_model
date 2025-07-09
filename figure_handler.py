@@ -26,7 +26,7 @@ class FigureHandler:
 
     def plot_profiles(self, H, times, pot_minima = None):
         x = self.model.x # get grid of model
-        plt.figure(figsize=(12, 8))
+        plt.figure()
         for h, t in zip(H.T, times):
             plt.plot(x, h, label=f't={t:.2f}')
         if pot_minima is not None:
@@ -34,7 +34,7 @@ class FigureHandler:
                 plt.hlines(y, xmin=x[0], xmax=x[-1], linestyles='dashed')
         plt.xlabel('x')
         plt.ylabel('h(x,t)')
-        plt.legend()
+        plt.legend(loc = 'right')
         plt.grid(True)
 
     def plot_free_energy(self, H, times):
