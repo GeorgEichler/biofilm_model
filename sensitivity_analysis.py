@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import itertools
 from OneD_FDM_oscillatory_model import OneD_Thin_Film_Model
 
-def create_parameter_grid(parameter_values_dic):
+def create_parameter_grid(parameter_values_dict):
     """
     Create list of parameter dictionaries from a dictionary
 
@@ -13,8 +13,8 @@ def create_parameter_grid(parameter_values_dic):
     Returns:
         list: A list of dictionaries
     """
-    param_names = parameter_values_dic.keys()
-    values_list = parameter_values_dic.values()
+    param_names = parameter_values_dict.keys()
+    values_list = parameter_values_dict.values()
 
     # Make Cartesian product of parameter values
     param_combination = list(itertools.product(*values_list))
@@ -81,11 +81,10 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
     plt.show()
 
 if __name__ == "__main__":
-    param_values = {'Q': [0.1, 1, 10],
-                    'g': [0.1, 1, 10]}
+    param_values = {'gamma': [0.1, 1, 10]}
     param_sets = create_parameter_grid(param_values)
     run_sensitivity_analysis(
         param_sets=param_sets,
-        T = 10
+        T = 50
     )
     
