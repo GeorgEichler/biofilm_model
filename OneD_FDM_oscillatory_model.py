@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.sparse import diags
 from scipy.integrate import solve_ivp
+from scipy.fft import fft, ifft, fftfreq
 import matplotlib.pyplot as plt
 import figure_handler as fh
 from helper_functions import find_first_k_minima
@@ -16,10 +17,9 @@ class OneD_Thin_Film_Model:
         Kwargs:
             L (float): Domain length [0, L]
             N (int): Number of grid points
-            Q (float): Diffusion coefficient
             gamma (float): Surface tension
             h_max (float): maximal film height for the growth term
-            g (float): growth coefficient
+            g (float): coefficient of logistic growth, qoutient of growth and diffusion coefficient
             a, b, c, d, k (float): Parameter for the binding potential
             h_init_type (str): Type of inital condition
         """
@@ -27,7 +27,7 @@ class OneD_Thin_Film_Model:
         self.use_fft = use_fft
         # Default values
         self.params = {
-            'L': 50, 'N': 1000, 'Q': 1, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
+            'L': 50, 'N': 1000, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
             'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi
         }
 
@@ -56,7 +56,7 @@ class OneD_Thin_Film_Model:
 
         if self.use_fft:
             # Calculate FFT wavenumbers
-            self.fft_k = 2 *np.pi * np.fft.fftfreq(N, d = self.dx)
+            self.fft_k = 2 *np.pi * fftfreq(N, d = self.dx)
         
         else:
             # Second derivative with periodic boundary conditions
@@ -81,12 +81,6 @@ class OneD_Thin_Film_Model:
             raise ValueError(f"Unknown initial condition type: {init_type}")
         
         return h_init
-
-    def _derivative_fft(self, y):
-        return np.fft.ifft(1j * self.fft_k * np.fft.fft(y)).real
-    
-    def _laplacian_fft(self, y):
-        return np.fft.ifft(- (self.fft_k**2) * np.fft.fft(y) ).real
 
     # Define binding energies and corresponding disjoint pressures
     def g1(self, h):
@@ -122,30 +116,43 @@ class OneD_Thin_Film_Model:
         potential = self.g1(h)
         return [np.sum(surface_energy) * self.dx, np.sum(potential) * self.dx]
 
+    def _rhs_fdm(self, t, h):
+        """RHS for finite difference method"""
+        p = self.params
+        h_xx = self.Laplacian @ h 
+        mu = - self.Pi1(h) - p['gamma'] * h_xx
+        mu_x = self.D @ mu
+        flux = self.D @ mu_x
+        source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
+        return flux + source
+
+    # Right hand side when using FFT
+    def _rhs_fft(self, t, h):
+        p = self.params
+        # Compute nonlinear terms in real space
+        pi_h = self.Pi1(h)
+        source_h = p['g'] * (h - self.h0) * (1 - (h - self.h0) / p['h_max'])
+
+        # Transform to Fourier space
+        h_hat = fft(h)
+        pi_h_hat = fft(pi_h)
+        source_h_hat = fft(source_h)
+
+        # Assemble RHS in Fourier space using d^n/dx^n -> (i*k)^n
+        k2 = self.fft_k**2
+        k4 = self.fft_k**4
+
+        rhs_hat = (-p['gamma'] * k4 * h_hat + k2 * pi_h_hat) + source_h_hat
+
+        return ifft(rhs_hat).real 
+
     # Right hand side of PDE
     def rhs(self, t, h):
         if self.use_fft:
             return self._rhs_fft(t, h)
         else:
-            p = self.params
-            h_xx = self.Laplacian @ h 
-            mu =   - self.Pi1(h) - p['gamma'] * h_xx
-            mu_x = self.D @ mu
-            flux = self.D @ (p['Q'] * mu_x)
-            source = p['g'] * (h - self.h0) * (1 - (h - self.h0) / p['h_max'])
-
-            return flux + source
-
-    # Right hand side when using FFT
-    def _rhs_fft(self, t, h):
-        p = self.params
-        h_xx = self._laplacian_fft(h)
-        mu = -self.Pi1(h) - p['gamma'] * h_xx
-        mu_x = self._derivative_fft(mu)
-        flux = self._derivative_fft(p['Q'] * mu_x)
-        source = p['g'] * (h - self.h0) * (1 - (h - self.h0) / p['h_max'])
-        return flux + source
-
+            return self._rhs_fdm(t, h)
+        
     # Good possible methods due to the stiffness are LSODA, BDF or Radau
     def solve(self, h0, T = 10, method = 'LSODA', t_eval = None):
         start = time.time()
@@ -160,7 +167,7 @@ class OneD_Thin_Film_Model:
 
 if __name__ == "__main__":
     params = {'a': 1, 'gamma': 0.5}
-    T = 100
+    T = 10
     model = OneD_Thin_Film_Model(use_fft=False,**params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
@@ -171,8 +178,6 @@ if __name__ == "__main__":
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H, t_plot)
 
-    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'BDF')
-    figure_handler.plot_profiles(H, t_plot)
     """
     h_mins, g1_mins = find_first_k_minima(
         k_minima=5, 
