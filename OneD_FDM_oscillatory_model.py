@@ -11,7 +11,7 @@ class OneD_Thin_Film_Model:
     A class to set up a one dimensional thin-film equation model
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, use_fft = False, **kwargs):
         """
         Kwargs:
             L (float): Domain length [0, L]
@@ -24,6 +24,7 @@ class OneD_Thin_Film_Model:
             h_init_type (str): Type of inital condition
         """
         
+        self.use_fft = use_fft
         # Default values
         self.params = {
             'L': 50, 'N': 1000, 'Q': 1, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
@@ -46,19 +47,25 @@ class OneD_Thin_Film_Model:
         self.dx = L / N
         self.x = (np.arange(1, N + 1) - 0.5) * self.dx
 
-        # First derivative with periodic boundary conditions
+        # First derivative with periodic boundary conditions, also needed for free energy
         D = diags(diagonals=[-1,1], offsets=[-1,1], shape=(N, N), format= 'lil')
         D[0, -1] = -1
         D[-1, 0] = 1
 
         self.D = (D / (2 * self.dx)).asformat('csr')
 
-        # Second derivative with periodic boundary conditions
-        Laplacian = diags(diagonals=[1,-2,1], offsets=[-1,0,1], shape = (N, N), format = 'lil')
-        Laplacian[0, -1] = 1
-        Laplacian[-1, 0] = 1
+        if self.use_fft:
+            # Calculate FFT wavenumbers
+            self.fft_k = 2 *np.pi * np.fft.fftfreq(N, d = self.dx)
+        
+        else:
+            # Second derivative with periodic boundary conditions
+            Laplacian = diags(diagonals=[1,-2,1], offsets=[-1,0,1], shape = (N, N), format = 'lil')
+            Laplacian[0, -1] = 1
+            Laplacian[-1, 0] = 1
 
-        self.Laplacian = (Laplacian / (self.dx**2)).asformat('csr')
+            self.Laplacian = (Laplacian / (self.dx**2)).asformat('csr')
+            
 
     # Pre-defined initial conditions
     def setup_initial_conditions(self, init_type):
@@ -74,6 +81,12 @@ class OneD_Thin_Film_Model:
             raise ValueError(f"Unknown initial condition type: {init_type}")
         
         return h_init
+
+    def _derivative_fft(self, y):
+        return np.fft.ifft(1j * self.fft_k * np.fft.fft(y)).real
+    
+    def _laplacian_fft(self, y):
+        return np.fft.ifft(- (self.fft_k**2) * np.fft.fft(y) ).real
 
     # Define binding energies and corresponding disjoint pressures
     def g1(self, h):
@@ -111,19 +124,37 @@ class OneD_Thin_Film_Model:
 
     # Right hand side of PDE
     def rhs(self, t, h):
-        p = self.params
-        h_xx = self.Laplacian @ h 
-        mu =   - self.Pi1(h) - p['gamma'] * h_xx
-        mu_x = self.D @ mu
-        flux = self.D @ (p['Q'] * mu_x)
-        source = p['g'] * (h - self.h0) * (1 - (h - self.h0) / p['h_max'])
+        if self.use_fft:
+            return self._rhs_fft(t, h)
+        else:
+            p = self.params
+            h_xx = self.Laplacian @ h 
+            mu =   - self.Pi1(h) - p['gamma'] * h_xx
+            mu_x = self.D @ mu
+            flux = self.D @ (p['Q'] * mu_x)
+            source = p['g'] * (h - self.h0) * (1 - (h - self.h0) / p['h_max'])
 
+            return flux + source
+
+    # Right hand side when using FFT
+    def _rhs_fft(self, t, h):
+        p = self.params
+        h_xx = self._laplacian_fft(h)
+        mu = -self.Pi1(h) - p['gamma'] * h_xx
+        mu_x = self._derivative_fft(mu)
+        flux = self._derivative_fft(p['Q'] * mu_x)
+        source = p['g'] * (h - self.h0) * (1 - (h - self.h0) / p['h_max'])
         return flux + source
 
-    def solve(self, h0, T = 10, method = 'BDF', t_eval = None):
+    # Good possible methods due to the stiffness are LSODA, BDF or Radau
+    def solve(self, h0, T = 10, method = 'LSODA', t_eval = None):
+        start = time.time()
+        print(f"Start integration using {method} method in [0, {T}]...")
         if t_eval is None:
             t_eval = np.linspace(0, T, 5)
         sol = solve_ivp(self.rhs, [0, T], h0, t_eval = t_eval, method = method)
+        end = time.time()
+        print(f"Integration finished in {end - start:.3f}s.")
         return sol.t, sol.y
 
 def find_first_k_minima(k_minima, f, range = [0,10], num_points = 1000):
@@ -163,10 +194,9 @@ def find_first_k_minima(k_minima, f, range = [0,10], num_points = 1000):
 
 
 if __name__ == "__main__":
-    start = time.time()
     params = {'a': 1, 'gamma': 0.5}
-    T = 10
-    model = OneD_Thin_Film_Model(**params)
+    T = 100
+    model = OneD_Thin_Film_Model(use_fft=False,**params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
@@ -174,16 +204,16 @@ if __name__ == "__main__":
     times, H = model.solve(h_init, T = T, t_eval = t_eval)
 
     figure_handler = fh.FigureHandler(model)
+    figure_handler.plot_profiles(H, t_plot)
+
+    
     h_mins, g1_mins = find_first_k_minima(
         k_minima=5, 
         f = model.g1
     )
-    figure_handler.plot_profiles(H, t_plot, pot_minima=h_mins)
     figure_handler.plot_binding_energy(model.g1)
-
     print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     figure_handler.plot_free_energy(H, times)
-    end = time.time()
-    print(f"Run time: {end - start}")
+    
 
     plt.show()
