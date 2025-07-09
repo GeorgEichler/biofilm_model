@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.sparse import diags
 from scipy.integrate import solve_ivp
-from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
 import figure_handler as fh
+from helper_functions import find_first_k_minima
 import time
 
 class OneD_Thin_Film_Model:
@@ -157,41 +157,6 @@ class OneD_Thin_Film_Model:
         print(f"Integration finished in {end - start:.3f}s.")
         return sol.t, sol.y
 
-def find_first_k_minima(k_minima, f, range = [0,10], num_points = 1000):
-    """
-    Find the first k minima of a function f(x)
-
-    Args:
-        k_minima (int): Number of minima to find
-        f (func): Function to find minima of
-        range (array): The search range
-        num_points (int): Number of points for grid search
-
-    Returns:
-        x_minima (np.ndarray): values of minima
-        f_minima (np.ndarray): corresponding function values to minima
-    """
-
-    # Create dense grid
-    x_values = np.linspace(range[0], range[1], num_points)
-    f_values = f(x_values)
-
-    # find peaks of -f which are the minima
-    indices, _ = find_peaks(-f_values, prominence=1e-4)
-
-    if len(indices) < k_minima:
-        num_minima = len(indices)
-        print(f"Warning: Found only {num_minima} minima instead of {k_minima}.")
-        print("Consider increasing the range or the grid number.")
-    else:
-        num_minima = k_minima
-
-    first_k_indices = indices[:num_minima]
-    x_minima = x_values[first_k_indices]
-    f_minima = f_values[first_k_indices]
-
-    return x_minima, f_minima
-
 
 if __name__ == "__main__":
     params = {'a': 1, 'gamma': 0.5}
@@ -206,7 +171,9 @@ if __name__ == "__main__":
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H, t_plot)
 
-    
+    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'BDF')
+    figure_handler.plot_profiles(H, t_plot)
+    """
     h_mins, g1_mins = find_first_k_minima(
         k_minima=5, 
         f = model.g1
@@ -214,6 +181,6 @@ if __name__ == "__main__":
     figure_handler.plot_binding_energy(model.g1)
     print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     figure_handler.plot_free_energy(H, times)
-    
+    """
 
     plt.show()
