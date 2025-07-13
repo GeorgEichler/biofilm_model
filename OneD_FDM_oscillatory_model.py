@@ -6,13 +6,64 @@ import matplotlib.pyplot as plt
 import figure_handler as fh
 from helper_functions import find_first_k_minima
 import time
+from numba import njit
+
+# Cannot use class methods or dictionaries for njitted functions
+@njit
+def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, a, b, c, d, k):
+    """RHS calculation using direct stencils, optimized with Numba."""
+    
+    # Allocate arrays for intermediate results
+    h_xx = np.empty_like(h)
+    mu = np.empty_like(h)
+    mu_x = np.empty_like(h)
+    flux = np.empty_like(h)
+    
+    # --- Pi1 calculation (same as before) ---
+    exp_h_c = np.exp(-h / c)
+    cos_term = np.cos(h * k + b)
+    sin_term = np.sin(h * k + b)
+    pi1 = a * exp_h_c * (k * sin_term + 1/c * cos_term) + d/(2*c)*np.exp(-h/(2*c))
+
+    # --- Derivative calculations using stencils in a loop ---
+    dx2 = dx * dx
+    inv_2dx = 1.0 / (2.0 * dx)
+
+    for i in range(N):
+        # Periodic boundary conditions using modulo
+        i_plus_1 = (i + 1) % N
+        i_minus_1 = (i - 1 + N) % N
+        
+        # Second derivative of h
+        h_xx[i] = (h[i_plus_1] - 2 * h[i] + h[i_minus_1]) / dx2
+    
+    mu = -pi1 - gamma * h_xx
+    
+    for i in range(N):
+        i_plus_1 = (i + 1) % N
+        i_minus_1 = (i - 1 + N) % N
+        
+        # First derivative of mu
+        mu_x[i] = (mu[i_plus_1] - mu[i_minus_1]) * inv_2dx
+        
+    for i in range(N):
+        i_plus_1 = (i + 1) % N
+        i_minus_1 = (i - 1 + N) % N
+        
+        # First derivative of mu_x (this is the flux term)
+        flux[i] = (mu_x[i_plus_1] - mu_x[i_minus_1]) * inv_2dx
+
+    source = g * (h - h0) * (1 - (h - h0) / h_max)
+
+    return flux + source
+    
 
 class OneD_Thin_Film_Model:
     """
     A class to set up a one dimensional thin-film equation model
     """
 
-    def __init__(self, use_fft = False, **kwargs):
+    def __init__(self, method = 'fdm', **kwargs):
         """
         Kwargs:
             L (float): Domain length [0, L]
@@ -24,7 +75,7 @@ class OneD_Thin_Film_Model:
             h_init_type (str): Type of inital condition
         """
         
-        self.use_fft = use_fft
+        self.method = method
         # Default values
         self.params = {
             'L': 50, 'N': 1000, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
@@ -54,7 +105,7 @@ class OneD_Thin_Film_Model:
 
         self.D = (D / (2 * self.dx)).asformat('csr')
 
-        if self.use_fft:
+        if self.method == 'fft':
             # Calculate FFT wavenumbers
             self.fft_k = 2 *np.pi * fftfreq(N, d = self.dx)
         
@@ -126,6 +177,7 @@ class OneD_Thin_Film_Model:
         source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
         return flux + source
 
+
     # Right hand side when using FFT
     def _rhs_fft(self, t, h):
         p = self.params
@@ -148,10 +200,17 @@ class OneD_Thin_Film_Model:
 
     # Right hand side of PDE
     def rhs(self, t, h):
-        if self.use_fft:
+        if self.method == 'fft':
             return self._rhs_fft(t, h)
-        else:
+        elif self.method == 'fdm':
             return self._rhs_fdm(t, h)
+        elif self.method == 'numba':
+            p = self.params
+            return _rhs_stencil_numba(h, self.dx, p['N'], p['gamma'], 
+                                  p['g'], p['h_max'], self.h0, p['a'], p['b'], 
+                                  p['c'], p['d'], p['k'])
+        else:
+            print('Warning')
         
     # Good possible methods due to the stiffness are LSODA, BDF or Radau
     def solve(self, h0, T = 10, method = 'LSODA', t_eval = None):
@@ -167,8 +226,8 @@ class OneD_Thin_Film_Model:
 
 if __name__ == "__main__":
     params = {'a': 1, 'gamma': 0.5}
-    T = 10
-    model = OneD_Thin_Film_Model(use_fft=False,**params)
+    T = 100
+    model = OneD_Thin_Film_Model(method = 'fdm',**params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
