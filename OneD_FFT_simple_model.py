@@ -131,6 +131,8 @@ class FFT_OneD_Thin_Film_Model:
         target_indices = sorted(list(set(raw_indices)))
         target_ptr = 0
 
+        start = time.time()
+        print(f"Start integration using spectral methods in [0, {T_final}]...")
         for i in range(num_steps):
             # perform one time step
             h = self.time_step(h, dt)
@@ -141,11 +143,14 @@ class FFT_OneD_Thin_Film_Model:
                 t_snapshots.append(current_t)
                 h_snapshots.append(h.copy())
                 target_ptr +=1
+        end = time.time()
+        print(f"Integration finished in {end - start}s.")
 
         results = {
             'times': np.array(t_snapshots),
             'H': np.array(h_snapshots)
         }
+
 
         return results
         
@@ -162,7 +167,12 @@ if __name__ == "__main__":
     results = model.solve(h0, T_final, t_eval)
     times = results['times']
     H = results['H']
+    h_mins, g_mins = find_first_k_minima(
+        k_minima = 5,
+        f = model.g1
+    )
+
     figure_handler = fh.FigureHandler(model)
-    figure_handler.plot_profiles(H, times)
+    figure_handler.plot_profiles(H, times, pot_minima = h_mins)
     
     plt.show()
