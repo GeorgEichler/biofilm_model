@@ -25,6 +25,13 @@ class FigureHandler:
         plt.title('Binding potential')
 
     def plot_profiles(self, H, times, pot_minima = None):
+        """
+        Plot height profiles at different times
+        Parameters:
+            H (ndarray(ndarray)): height profiles
+            times (ndarray): plot times
+            pot_minima (ndarray): list of minima of binding potential  
+        """
         x = self.model.x # get grid of model
         plt.figure()
         for h, t in zip(H, times):
