@@ -2,6 +2,7 @@ import numpy as np
 from scipy.fft import fft, ifft, fftfreq
 import matplotlib.pyplot as plt
 from helper_functions import find_first_k_minima
+import figure_handler as fh
 import time
 
 class FFT_OneD_Thin_Film_Model:
@@ -24,7 +25,7 @@ class FFT_OneD_Thin_Film_Model:
 
         # Default parameters
         self.params = {
-            'L': 10, 'N': 128, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
+            'L': 50, 'N': 1000, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
             'a': 0.1, 'b': np.pi/2, 'c': 1, 'd': 0.02, 'k': 2*np.pi
         }
         self.params.update(kwargs)
@@ -106,48 +107,62 @@ class FFT_OneD_Thin_Film_Model:
 
         # transform back to real space
         return ifft(h_hat_new).real
+
+    def solve(self, h0, T_final, t_eval, dt = 0.1):
+        h = h0.copy()
+        num_steps = int(T_final / dt)
+        t_eval = np.asarray(t_eval)
+
+        t_snapshots = [0.0]
+        h_snapshots = [h.copy()]
+
+        # Calculate indices from simulation
+        raw_indices = []
+
+        for t_e in t_eval:
+            # Time at step i is t = (i + 1) * dt (0 indication)
+            # for i + 1 be closest integer to t_e /dt take i = round(t_e/dt) - 1
+            step_idx = int(np.round(t_e / dt)) - 1
+
+            if 0 <= step_idx < num_steps:
+                raw_indices.append(step_idx)
+        
+        # create sorted list of unique indices
+        target_indices = sorted(list(set(raw_indices)))
+        target_ptr = 0
+
+        for i in range(num_steps):
+            # perform one time step
+            h = self.time_step(h, dt)
+
+            # check if we want a snapshot
+            if target_ptr < len(target_indices) and i == target_indices[target_ptr]:
+                current_t = (i + 1) * dt
+                t_snapshots.append(current_t)
+                h_snapshots.append(h.copy())
+                target_ptr +=1
+
+        results = {
+            'times': np.array(t_snapshots),
+            'H': np.array(h_snapshots)
+        }
+
+        return results
         
 if __name__ == "__main__":
     # Simulation parameters
     T_final = 10.0
     dt = 0.1
+    t_eval = np.linspace(0, T_final, 5)
 
-    model = FFT_OneD_Thin_Film_Model(N=512, L=10.0)
-    h = model.setup_initial_conditions('gaussian')
+    model = FFT_OneD_Thin_Film_Model()
+    h0 = model.setup_initial_conditions('gaussian')
 
-    num_steps = int(T_final/dt)
-    print(f"Running {num_steps} steps (dt={dt})...")
 
-    # Set up live plotting
-    plt.ion()
-    fig, ax = plt.subplots()
-    line, = ax.plot(model.x, h)
-    ax.set_ylim(h.min()-0.1, h.max()+0.1)
-    ax.set_xlabel("x")
-    ax.set_ylabel("h(x)")
-    ax.set_title("t = 0.00")
-
-    start = time.time()
-    plot_every = 20
-
-    for i in range(num_steps):
-        h = model.time_step(h, dt)
-        if (i+1) % plot_every == 0:
-            t = (i+1)*dt
-            line.set_ydata(h)
-            ax.set_title(f"t = {t:.2f}")
-            ax.set_ylim(h.min(), h.max())
-            plt.pause(0.01)
-
-    plt.ioff()
-    end = time.time()
-
-    print(f"Done in {end-start:.2f}s")
-
-    # Final snapshot
-    plt.figure()
-    plt.plot(model.x, h, '-')
-    plt.xlabel("x")
-    plt.ylabel("h(x)")
-    plt.title(f"Final State at t={T_final}")
+    results = model.solve(h0, T_final, t_eval)
+    times = results['times']
+    H = results['H']
+    figure_handler = fh.FigureHandler(model)
+    figure_handler.plot_profiles(H, times)
+    
     plt.show()
