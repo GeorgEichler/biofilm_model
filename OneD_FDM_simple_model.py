@@ -226,8 +226,8 @@ class OneD_Thin_Film_Model:
 
 if __name__ == "__main__":
     params = {'a': 1, 'gamma': 0.5}
-    T = 100
-    model = OneD_Thin_Film_Model(method = 'fdm',**params)
+    T = 50
+    model = OneD_Thin_Film_Model(method = 'numba',**params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
