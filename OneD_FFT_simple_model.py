@@ -113,13 +113,19 @@ class FFT_OneD_Thin_Film_Model:
         num_steps = int(T / dt)
         t_eval = np.asarray(t_eval)
 
-        t_snapshots = [0.0]
-        h_snapshots = [h.copy()]
+        t_snapshots = []
+        h_snapshots = []
 
         # Calculate indices from simulation
         raw_indices = []
+        save_initial_state = False
 
         for t_e in t_eval:
+            # check if initial state is to be recorded
+            if np.isclose(t_e, 0):
+                save_initial_state = True
+                continue
+
             # Time at step i is t = (i + 1) * dt (0 indication)
             # for i + 1 be closest integer to t_e /dt take i = round(t_e/dt) - 1
             step_idx = int(np.round(t_e / dt)) - 1
@@ -130,6 +136,10 @@ class FFT_OneD_Thin_Film_Model:
         # create sorted list of unique indices
         target_indices = sorted(list(set(raw_indices)))
         target_ptr = 0
+
+        if save_initial_state:
+            t_snapshots.append(0.0)
+            h_snapshots.append(h.copy())
 
         start = time.time()
         print(f"Start integration using spectral methods in [0, {T}]...")
