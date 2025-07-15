@@ -63,7 +63,7 @@ class OneD_Thin_Film_Model:
     A class to set up a one dimensional thin-film equation model
     """
 
-    def __init__(self, method = 'fdm', **kwargs):
+    def __init__(self, use_numba = False, **kwargs):
         """
         Kwargs:
             L (float): Domain length [0, L]
@@ -75,7 +75,7 @@ class OneD_Thin_Film_Model:
             h_init_type (str): Type of inital condition
         """
         
-        self.method = method
+        self.use_numba = use_numba
         # Default values
         self.params = {
             'L': 50, 'N': 1000, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
@@ -104,19 +104,14 @@ class OneD_Thin_Film_Model:
         D[-1, 0] = 1
 
         self.D = (D / (2 * self.dx)).asformat('csr')
-
-        if self.method == 'fft':
-            # Calculate FFT wavenumbers
-            self.fft_k = 2 *np.pi * fftfreq(N, d = self.dx)
         
-        else:
-            # Second derivative with periodic boundary conditions
-            Laplacian = diags(diagonals=[1,-2,1], offsets=[-1,0,1], shape = (N, N), format = 'lil')
-            Laplacian[0, -1] = 1
-            Laplacian[-1, 0] = 1
+        # Second derivative with periodic boundary conditions
+        Laplacian = diags(diagonals=[1,-2,1], offsets=[-1,0,1], shape = (N, N), format = 'lil')
+        Laplacian[0, -1] = 1
+        Laplacian[-1, 0] = 1
 
-            self.Laplacian = (Laplacian / (self.dx**2)).asformat('csr')
-            
+        self.Laplacian = (Laplacian / (self.dx**2)).asformat('csr')
+        
 
     # Pre-defined initial conditions
     def setup_initial_conditions(self, init_type):
@@ -178,44 +173,20 @@ class OneD_Thin_Film_Model:
         return flux + source
 
 
-    # Right hand side when using FFT
-    def _rhs_fft(self, t, h):
-        p = self.params
-        # Compute nonlinear terms in real space
-        pi_h = self.Pi1(h)
-        source_h = p['g'] * (h - self.h0) * (1 - (h - self.h0) / p['h_max'])
-
-        # Transform to Fourier space
-        h_hat = fft(h)
-        pi_h_hat = fft(pi_h)
-        source_h_hat = fft(source_h)
-
-        # Assemble RHS in Fourier space using d^n/dx^n -> (i*k)^n
-        k2 = self.fft_k**2
-        k4 = self.fft_k**4
-
-        rhs_hat = (-p['gamma'] * k4 * h_hat + k2 * pi_h_hat) + source_h_hat
-
-        return ifft(rhs_hat).real 
-
     # Right hand side of PDE
     def rhs(self, t, h):
-        if self.method == 'fft':
-            return self._rhs_fft(t, h)
-        elif self.method == 'fdm':
-            return self._rhs_fdm(t, h)
-        elif self.method == 'numba':
+        if self.use_numba:
             p = self.params
             return _rhs_stencil_numba(h, self.dx, p['N'], p['gamma'], 
                                   p['g'], p['h_max'], self.h0, p['a'], p['b'], 
                                   p['c'], p['d'], p['k'])
         else:
-            print('Warning')
+            return self._rhs_fdm(t, h)
         
     # Good possible methods due to the stiffness are LSODA, BDF or Radau
     def solve(self, h0, T = 10, method = 'LSODA', t_eval = None):
         start = time.time()
-        print(f"Start integration using {method} method in [0, {T}]...")
+        print(f"Start integration using finite differences and {method} method in [0, {T}]...")
         if t_eval is None:
             t_eval = np.linspace(0, T, 5)
         sol = solve_ivp(self.rhs, [0, T], h0, t_eval = t_eval, method = method)
@@ -226,8 +197,8 @@ class OneD_Thin_Film_Model:
 
 if __name__ == "__main__":
     params = {'a': 1, 'gamma': 0.5}
-    T = 50
-    model = OneD_Thin_Film_Model(method = 'numba',**params)
+    T = 10
+    model = OneD_Thin_Film_Model(use_numba= True, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
@@ -235,7 +206,7 @@ if __name__ == "__main__":
     times, H = model.solve(h_init, T = T, t_eval = t_eval)
 
     figure_handler = fh.FigureHandler(model)
-    figure_handler.plot_profiles(H, t_plot)
+    figure_handler.plot_profiles(H.T, times)
 
     """
     h_mins, g1_mins = find_first_k_minima(
