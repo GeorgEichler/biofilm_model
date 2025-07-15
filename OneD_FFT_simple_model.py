@@ -108,9 +108,9 @@ class FFT_OneD_Thin_Film_Model:
         # transform back to real space
         return ifft(h_hat_new).real
 
-    def solve(self, h0, T_final, t_eval, dt = 0.1):
+    def solve(self, h0, T, t_eval, dt = 0.1):
         h = h0.copy()
-        num_steps = int(T_final / dt)
+        num_steps = int(T / dt)
         t_eval = np.asarray(t_eval)
 
         t_snapshots = [0.0]
@@ -132,7 +132,7 @@ class FFT_OneD_Thin_Film_Model:
         target_ptr = 0
 
         start = time.time()
-        print(f"Start integration using spectral methods in [0, {T_final}]...")
+        print(f"Start integration using spectral methods in [0, {T}]...")
         for i in range(num_steps):
             # perform one time step
             h = self.time_step(h, dt)
@@ -151,20 +151,19 @@ class FFT_OneD_Thin_Film_Model:
             'H': np.array(h_snapshots)
         }
 
-
         return results
         
 if __name__ == "__main__":
     # Simulation parameters
-    T_final = 10.0
+    T = 10.0
     dt = 0.1
-    t_eval = np.linspace(0, T_final, 5)
+    t_eval = np.linspace(0, T, 5)
 
     model = FFT_OneD_Thin_Film_Model()
     h0 = model.setup_initial_conditions('gaussian')
 
 
-    results = model.solve(h0, T_final, t_eval)
+    results = model.solve(h0, T, t_eval)
     times = results['times']
     H = results['H']
     h_mins, g_mins = find_first_k_minima(
