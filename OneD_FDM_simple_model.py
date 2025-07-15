@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.sparse import diags
 from scipy.integrate import solve_ivp
-from scipy.fft import fft, ifft, fftfreq
 import matplotlib.pyplot as plt
 import figure_handler as fh
 from helper_functions import find_first_k_minima
