@@ -25,7 +25,7 @@ class FFT_OneD_Thin_Film_Model:
 
         # Default parameters
         self.params = {
-            'L': 50, 'N': 1000, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
+            'L': 50, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
             'a': 0.1, 'b': np.pi/2, 'c': 1, 'd': 0.02, 'k': 2*np.pi
         }
         self.params.update(kwargs)
@@ -51,7 +51,7 @@ class FFT_OneD_Thin_Film_Model:
         L = self.params['L']
 
         if init_type == 'gaussian':
-            h_init = (self.h0 + 0.01) + 5 * np.exp(-(self.x - L/2)**2/0.1)
+            h_init = (self.h0 + 0.01) + 2 * np.exp(-(self.x - L/2)**2/10)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
         elif init_type == 'bump':
@@ -84,7 +84,8 @@ class FFT_OneD_Thin_Film_Model:
     
     def growth_term(self, h):
         p = self.params
-        return p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
+        growth = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
+        return np.where(h > self.h0, growth, 0.0)
     
     def time_step(self, h, dt):
         p = self.params
@@ -154,7 +155,7 @@ class FFT_OneD_Thin_Film_Model:
                 h_snapshots.append(h.copy())
                 target_ptr +=1
         end = time.time()
-        print(f"Integration finished in {end - start}s.")
+        print(f"Integration finished in {end - start:.3f}s.")
 
         results = {
             'times': np.array(t_snapshots),
@@ -165,11 +166,12 @@ class FFT_OneD_Thin_Film_Model:
         
 if __name__ == "__main__":
     # Simulation parameters
-    T = 10.0
-    dt = 0.1
+    T = 100
+    dt = 0.01
     t_eval = np.linspace(0, T, 5)
+    params = {'gamma': 10, 'N': 4096}
 
-    model = FFT_OneD_Thin_Film_Model()
+    model = FFT_OneD_Thin_Film_Model(**params)
     h0 = model.setup_initial_conditions('gaussian')
 
 
