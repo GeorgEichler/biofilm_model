@@ -27,7 +27,7 @@ class FigureHandler:
     def plot_profiles(self, H, times, pot_minima = None):
         x = self.model.x # get grid of model
         plt.figure()
-        for h, t in zip(H.T, times):
+        for h, t in zip(H, times):
             plt.plot(x, h, label=f't={t:.2f}')
         if pot_minima is not None:
             for y in pot_minima:
