@@ -1,7 +1,7 @@
 import time
 import matplotlib.pyplot as plt
 import itertools
-from OneD_FDM_oscillatory_model import OneD_Thin_Film_Model
+from OneD_FFT_simple_model import FFT_OneD_Thin_Film_Model
 
 def create_parameter_grid(parameter_values_dict):
     """
@@ -43,7 +43,7 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
     final_profiles = {}
     
     # Create temporary model to get grid
-    temp_model = OneD_Thin_Film_Model(**const_params)
+    temp_model = FFT_OneD_Thin_Film_Model(**const_params)
     x_grid = temp_model.x
     h_init = temp_model.setup_initial_conditions(initial_condition)
 
@@ -55,13 +55,14 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
         # Define model
         current_params = const_params.copy()
         current_params.update(p_set)
-        model = OneD_Thin_Film_Model(**current_params)
+        model = FFT_OneD_Thin_Film_Model(**current_params)
 
         # Solve the model
-        _, H = model.solve(h_init, T=T, t_eval=[T])
+        results = model.solve(h_init, T=T, t_eval=[T])
+        H = results['H']
 
         # Store the final height profile
-        final_profiles[label] = H[:, 0]
+        final_profiles[label] = H[0]
 
     fig, ax = plt.subplots(figsize=(12, 8))
     ax.plot(x_grid, h_init, 'k--', label = '$h_0$')
@@ -72,7 +73,7 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
     ax.set_title(f"Sensitivity Analysis at T={T}")
     ax.set_xlabel('Position (x)')
     ax.set_ylabel('Final Film Height h(x, T)')
-    ax.legend()
+    ax.legend(loc = 'upper right')
     ax.grid(True, linestyle='--', alpha=0.6)
     
     end_time = time.time()
@@ -81,7 +82,9 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
     plt.show()
 
 if __name__ == "__main__":
-    param_values = {'gamma': [0.1, 1, 10]}
+    param_values = {'gamma': [0.1, 1, 10],
+                    'a': [0.1, 1, 10],
+                    'g': [0.1, 1, 10]}
     param_sets = create_parameter_grid(param_values)
     run_sensitivity_analysis(
         param_sets=param_sets,
