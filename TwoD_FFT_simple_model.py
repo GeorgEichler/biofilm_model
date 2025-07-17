@@ -14,9 +14,9 @@ class FastTwoD_Thin_Film_Model:
     def __init__(self, **kwargs):
         # Default parameters
         self.params = {
-            'Lx': 20, 'Ly': 20, 'Nx': 256, 'Ny': 256, 'gamma': 0.5, 
+            'Lx': 50, 'Ly': 50, 'Nx': 256, 'Ny': 256, 'gamma': 0.5, 
             'h_max': 5, 'g': 0.1, 'a': 0.1, 'b': np.pi/2, 'c': 1.0, 
-            'd': 0.02, 'k': 2*np.pi
+            'd': 0.02, 'k': 2*np.pi, 'amplitude': 2, 'var': 10
         }
         self.params.update(kwargs)
         self._setup_grid_and_fft()
@@ -51,8 +51,13 @@ class FastTwoD_Thin_Film_Model:
     def setup_initial_conditions(self, init_type='random'):
         """Generates a 2D initial condition."""
         p = self.params
+        Lx = p['Lx']
+        Ly = p['Ly']
+        amplitude = p['amplitude']
+        var = p['var']
+
         if init_type == 'gaussian':
-            h_init = self.h0 + 2 * np.exp(-((self.X - p['Lx']/2)**2 + (self.Y - p['Ly']/2)**2) / 10)
+            h_init = self.h0 + amplitude * np.exp(-((self.X - Lx/2)**2 + (self.Y - Ly/2)**2) / var)
         elif init_type == 'random':
             h_init = self.h0 + 0.05 * (np.random.rand(*self.shape) - 0.5)
         else:
@@ -110,7 +115,7 @@ class FastTwoD_Thin_Film_Model:
 if __name__ == "__main__":
 # --- Simulation Setup ---
     T_final = 50 
-    dt = 0.01
+    dt = 0.1
     params = {'g': 0.1, 'gamma': 10}
     model = FastTwoD_Thin_Film_Model(**params)
     h = model.setup_initial_conditions(init_type='gaussian')
@@ -152,7 +157,7 @@ if __name__ == "__main__":
     
     start_time = time.time()
     
-    plot_every = 20
+    plot_every = 10
     for i in range(num_steps):
         h = model.step(h, dt)
         

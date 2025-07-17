@@ -65,7 +65,8 @@ class TwoD_Thin_Film_Model:
         # Default values
         self.params = {
             'Lx': 10, 'Ly': 10, 'Nx': 100, 'Ny': 100, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
-            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi
+            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi,
+            'amplitude': 2, 'var': 10
         }
 
         # Update parameters with possible user-provided arguments
@@ -103,9 +104,14 @@ class TwoD_Thin_Film_Model:
         now use the new cell-centered self.X and self.Y coordinates.
         """
         p = self.params
+        Lx = p['Lx']
+        Ly = p['Ly']
+        amplitude = p['amplitude']
+        var = p['var']
+
         if init_type == 'gaussian':
             # A single Gaussian bump in the center
-            h_init = self.h0 + 2 * np.exp(-((self.X - p['Lx']/2)**2 + (self.Y - p['Ly']/2)**2) / 10)
+            h_init = self.h0 + amplitude * np.exp(-((self.X - Lx/2)**2 + (self.Y - Ly/2)**2) / var)
         elif init_type == 'random':
             # Small random perturbations around h0
             h_init = self.h0 + 0.05 * (np.random.rand(*self.shape) - 0.5)

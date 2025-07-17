@@ -75,7 +75,8 @@ class OneD_Thin_Film_Model:
         # Default values
         self.params = {
             'L': 50, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
-            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi
+            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi,
+            'amplitude': 2, 'var': 10
         }
 
         # Update parameters with possible user-provided arguments
@@ -112,13 +113,13 @@ class OneD_Thin_Film_Model:
     # Pre-defined initial conditions
     def setup_initial_conditions(self, init_type):
         L = self.params['L']
+        amplitude = self.params['amplitude']
+        var = self.params['var']
 
         if init_type == 'gaussian':
-            h_init = (self.h0 + 0.01) + 2 * np.exp(-(self.x - L/2)**2/10)
+            h_init = (self.h0 + 0.01) + amplitude * np.exp(-(self.x - L/2)**2/var)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
-        elif init_type == 'bump':
-            h_init = self.h0 + 0.1 * np.exp(-(self.x - L/2)**2/10)
         else:
             raise ValueError(f"Unknown initial condition type: {init_type}")
         
@@ -163,7 +164,7 @@ class OneD_Thin_Film_Model:
         growth = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
 
         # Apply constraint that h >=h0 holds in all cases
-        return np.where(h > self.h0, growth, 0.0)
+        return growth #np.where(h > self.h0, growth, 0.0)
 
     def _rhs_fdm(self, t, h):
         """RHS for finite difference method"""
@@ -190,21 +191,21 @@ class OneD_Thin_Film_Model:
         print(f"Start integration using finite differences and {method} method in [0, {T}]...")
         if t_eval is None:
             t_eval = np.linspace(0, T, 5)
-        sol = solve_ivp(self.rhs, [0, T], h0, t_eval = t_eval, method = method, rtol = 1e-6, atol = 1e-8)
+        sol = solve_ivp(self.rhs, [0, T], h0, t_eval = t_eval, method = method)
         end = time.time()
         print(f"Integration finished in {end - start:.3f}s.")
         return sol.t, sol.y
 
 
 if __name__ == "__main__":
-    params = {'gamma': 10, 'g': 0}
-    T = 50
-    model = OneD_Thin_Film_Model(use_numba= True, **params)
+    params = {'g': 0}
+    T = 100
+    model = OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
     h_init = model.setup_initial_conditions('gaussian')
-    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'BDF')
+    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA')
 
     
     h_mins, g1_mins = find_first_k_minima(
@@ -213,8 +214,8 @@ if __name__ == "__main__":
     )
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H.T, times, pot_minima = h_mins)
-    figure_handler.plot_binding_energy(model.g1)
-    print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
+    #figure_handler.plot_binding_energy(model.g1)
+    #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     #figure_handler.plot_free_energy(H, times)
 
     plt.show()
