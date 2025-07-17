@@ -110,7 +110,7 @@ class FastTwoD_Thin_Film_Model:
 if __name__ == "__main__":
 # --- Simulation Setup ---
     T_final = 50 
-    dt = 0.1
+    dt = 0.01
     params = {'g': 0.1, 'gamma': 10}
     model = FastTwoD_Thin_Film_Model(**params)
     h = model.setup_initial_conditions(init_type='gaussian')
