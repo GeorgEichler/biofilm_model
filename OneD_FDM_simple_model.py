@@ -85,8 +85,9 @@ class OneD_Thin_Film_Model:
         self._setup_grid_and_operators()
 
         # Calulate the first minima of the binding potential
-        min, _ = find_first_k_minima(1, self.g1)
+        min, _ = find_first_k_minima(2, self.g1)
         self.h0 = min[0]
+        self.h1 = min[1]
 
     def _setup_grid_and_operators(self):
         N = self.params['N']
@@ -171,7 +172,9 @@ class OneD_Thin_Film_Model:
         p = self.params
         h_xx = self.Laplacian @ h 
         mu = - self.Pi1(h) - p['gamma'] * h_xx
-        flux = self.Laplacian @ mu
+        #flux = self.Laplacian @ mu
+        mu_x = self.D @ mu
+        flux = self.D @ (h**3 / 3 * mu_x)
         return flux + self.growth_term(h)
 
 
@@ -198,8 +201,8 @@ class OneD_Thin_Film_Model:
 
 
 if __name__ == "__main__":
-    params = {'g': 0}
-    T = 100
+    params = {'gamma': 2}
+    T = 50
     model = OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
