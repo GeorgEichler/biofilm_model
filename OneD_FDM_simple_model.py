@@ -162,7 +162,10 @@ class OneD_Thin_Film_Model:
     
     def growth_term(self, h):
         p = self.params
-        growth = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
+        #source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
+        source = p['g'] * h * (1 - h/p['h_max'])
+        switch = (1 - self.h1/h) * (1 - np.exp(self.h0 - h))
+        growth = source * switch
 
         # Apply constraint that h >=h0 holds in all cases
         return growth #np.where(h > self.h0, growth, 0.0)
@@ -201,7 +204,7 @@ class OneD_Thin_Film_Model:
 
 
 if __name__ == "__main__":
-    params = {'gamma': 2}
+    params = {'gamma': 5, 'a': 0.1, 'g': 0.1, 'amp': 1.5}
     T = 50
     model = OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
