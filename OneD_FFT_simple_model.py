@@ -28,7 +28,7 @@ class FFT_OneD_Thin_Film_Model:
         self.params = {
             'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
             'a': 0.1, 'b': np.pi/2, 'c': 1, 'd': 0.02, 'k': 2*np.pi,
-            'amplitude': 2, 'var': 10
+            'amplitude': 2, 'var': 10, 'dt': 0.1
         }
         self.params.update(kwargs)
         self._setup_grid_and_fft()
@@ -94,8 +94,9 @@ class FFT_OneD_Thin_Film_Model:
         )
         return growth
     
-    def time_step(self, h, dt):
+    def time_step(self, h):
         p = self.params
+        dt = p['dt']
 
         # calculate explicit part in real space
         pi_h = self.Pi1(h)
@@ -116,7 +117,8 @@ class FFT_OneD_Thin_Film_Model:
         # transform back to real space
         return ifft(h_hat_new).real
 
-    def solve(self, h0, T, t_eval, dt = 0.1):
+    def solve(self, h0, T, t_eval):
+        dt = self.params['dt']
         h = h0.copy()
         num_steps = int(T / dt)
         t_eval = np.asarray(t_eval)
@@ -153,7 +155,7 @@ class FFT_OneD_Thin_Film_Model:
         print(f"Start integration using spectral methods in [0, {T}] with dt = {dt}...")
         for i in tqdm(range(num_steps), desc = "FFT Simulation"):
             # perform one time step
-            h = self.time_step(h, dt)
+            h = self.time_step(h)
 
             # check if we want a snapshot
             if target_ptr < len(target_indices) and i == target_indices[target_ptr]:
@@ -174,15 +176,15 @@ class FFT_OneD_Thin_Film_Model:
 if __name__ == "__main__":
     # Simulation parameters
     T = 100
-    dt = 0.1
+    # be careful with size of timestep for the implicit part
     t_eval = np.linspace(0, T, 5)
-    params = {}
+    params = {'amplitude': 1.5, 'g': 0.1, 'gamma': 0.1, 'dt': 0.01}
 
     model = FFT_OneD_Thin_Film_Model(**params)
     h0 = model.setup_initial_conditions('gaussian')
 
 
-    results = model.solve(h0, T, t_eval, dt = dt)
+    results = model.solve(h0, T, t_eval)
     times = results['times']
     H = results['H']
     
