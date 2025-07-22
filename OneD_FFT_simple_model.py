@@ -3,6 +3,7 @@ from scipy.fft import fft, ifft, fftfreq
 import matplotlib.pyplot as plt
 from helper_functions import find_first_k_minima
 import figure_handler as fh
+from tqdm import tqdm
 import time
 
 class FFT_OneD_Thin_Film_Model:
@@ -149,11 +150,10 @@ class FFT_OneD_Thin_Film_Model:
             h_snapshots.append(h.copy())
 
         start = time.time()
-        print(f"Start integration using spectral methods in [0, {T}]...")
-        for i in range(num_steps):
+        print(f"Start integration using spectral methods in [0, {T}] with dt = {dt}...")
+        for i in tqdm(range(num_steps), desc = "FFT Simulation"):
             # perform one time step
             h = self.time_step(h, dt)
-            print(f"t = {(i + 1)*dt:.2f}")
 
             # check if we want a snapshot
             if target_ptr < len(target_indices) and i == target_indices[target_ptr]:
