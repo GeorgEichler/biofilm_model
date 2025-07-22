@@ -55,7 +55,7 @@ class FFT_OneD_Thin_Film_Model:
         var = self.params['var']
 
         if init_type == 'gaussian':
-            h_init = (self.h0) + amplitude * np.exp(-(self.x - L/2)**2/var)
+            h_init = (self.h0 + 0.01) + amplitude * np.exp(-(self.x - L/2)**2/var)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
         else:
@@ -86,8 +86,12 @@ class FFT_OneD_Thin_Film_Model:
     
     def growth_term(self, h):
         p = self.params
-        growth = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max']) * (1 + np.tanh(10*(h - self.h1)))
-        return np.where(h > self.h0, growth, 0.0)
+        growth = (p['g'] * h *
+                  (1 - h / p['h_max']) *
+                  (1 - self.h1 / h) *
+                  (1 - np.exp(self.h0 - h))
+        )
+        return growth
     
     def time_step(self, h, dt):
         p = self.params
@@ -169,10 +173,10 @@ class FFT_OneD_Thin_Film_Model:
         
 if __name__ == "__main__":
     # Simulation parameters
-    T = 500
+    T = 100
     dt = 0.1
     t_eval = np.linspace(0, T, 5)
-    params = {'g': 0}
+    params = {}
 
     model = FFT_OneD_Thin_Film_Model(**params)
     h0 = model.setup_initial_conditions('gaussian')
