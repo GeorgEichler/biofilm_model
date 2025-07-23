@@ -54,7 +54,7 @@ def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, a, b, c, d, k):
     return flux + source
     
 
-class OneD_Thin_Film_Model:
+class FDM_OneD_Thin_Film_Model:
     """
     A class to set up a one dimensional thin-film equation model
     """
@@ -74,7 +74,7 @@ class OneD_Thin_Film_Model:
         self.use_numba = use_numba
         # Default values
         self.params = {
-            'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
+            'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1, 'Q':1.0,
             'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10
         }
@@ -164,10 +164,15 @@ class OneD_Thin_Film_Model:
     
     def growth_term(self, h):
         p = self.params
-        #source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
-        source = p['g'] * h/2 * (1 - h/p['h_max'])
-        switch = (1 - 2/h) * (1 - np.exp( (1 - h)/2))
-        growth = source * switch
+        #source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max']) 
+        #source = p['g'] * h/2 * (1 - h/p['h_max'])
+        #switch = (1 - 2/h) * (1 - np.exp( (1 - h)/2))
+        #growth = source * switch
+        growth = (p['g'] * h *
+                  (1 - h / p['h_max']) *
+                  (1 - self.h1 / h) *
+                  (1 - np.exp(self.h0 - h))
+        )
 
         return growth
 
@@ -176,9 +181,9 @@ class OneD_Thin_Film_Model:
         p = self.params
         h_xx = self.Laplacian @ h 
         mu = - self.Pi1(h) - p['gamma'] * h_xx
-        #flux = self.Laplacian @ mu
-        mu_x = self.D @ mu
-        flux = self.D @ (h**3 * mu_x)
+        flux = p['Q'] * self.Laplacian @ mu
+        #mu_x = self.D @ mu
+        #flux = self.D @ (h**3 * mu_x)
         return flux + self.growth_term(h)
 
 
@@ -205,13 +210,13 @@ class OneD_Thin_Film_Model:
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 2, 'h_max': 50, 'g': 1}
-    T = 1000
-    model = OneD_Thin_Film_Model(use_numba= False, **params)
+    params = {'amplitude': 1.2, 'h_max': 5, 'g': 0.01, 'gamma': 0.1}
+    T = 500
+    model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
-    h_init = model.setup_initial_conditions('cap')
+    h_init = model.setup_initial_conditions('gaussian')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA')
 
     

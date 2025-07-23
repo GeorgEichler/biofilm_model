@@ -2,6 +2,7 @@ import time
 import matplotlib.pyplot as plt
 import itertools
 from OneD_FFT_simple_model import FFT_OneD_Thin_Film_Model
+from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 
 def create_parameter_grid(parameter_values_dict):
     """
@@ -49,7 +50,7 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
         # Define model
         current_params = const_params.copy()
         current_params.update(p_set)
-        model = FFT_OneD_Thin_Film_Model(**current_params)
+        model = FDM_OneD_Thin_Film_Model(**current_params)
         
         #plot initial condition
         x_grid = model.x
@@ -78,10 +79,12 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
     plt.show()
 
 if __name__ == "__main__":
-    param_values = {'amplitude': [0.5, 1, 1.5, 2]}
+    const_params = {'amplitude': 1.5, 'dt': 0.01, 'gamma': 10}
+    param_values = {'g': [10**i for i in range(-2,3)]}
     param_sets = create_parameter_grid(param_values)
     run_sensitivity_analysis(
         param_sets=param_sets,
-        T = 50
+        const_params=const_params,
+        T = 100
     )
     
