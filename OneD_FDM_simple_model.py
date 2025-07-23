@@ -75,7 +75,7 @@ class FDM_OneD_Thin_Film_Model:
         # Default values
         self.params = {
             'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1, 'Q':1.0,
-            'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi,
+            'a': 0.1, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10
         }
 
@@ -131,18 +131,18 @@ class FDM_OneD_Thin_Film_Model:
     # Define binding energies and corresponding disjoint pressures
     def f1(self, h):
         p = self.params
-        a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
-        return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-h/(2*c))
+        a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
+        return a * np.cos(h * k + b) * np.exp(-h/c) + a*d * np.exp(-h/e)
+
+    def Pi1(self, h):
+        p = self.params
+        a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
+        return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + a* d/e*np.exp(-h/e)
 
     def f2(self, h):
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-2*h/c)
-
-    def Pi1(self, h):
-        p = self.params
-        a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
-        return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/(2*c)*np.exp(-h/(2*c))
 
     def Pi2(self, h):
         p = self.params
@@ -180,8 +180,8 @@ class FDM_OneD_Thin_Film_Model:
         """RHS for finite difference method"""
         p = self.params
         h_xx = self.Laplacian @ h 
-        mu = - self.Pi1(h) - p['gamma'] * h_xx
-        flux = p['Q'] * self.Laplacian @ mu
+        mu = - self.Pi1(h) - h_xx
+        flux = self.Laplacian @ mu
         #mu_x = self.D @ mu
         #flux = self.D @ (h**3 * mu_x)
         return flux + self.growth_term(h)
