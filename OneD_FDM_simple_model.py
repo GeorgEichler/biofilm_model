@@ -74,7 +74,7 @@ class OneD_Thin_Film_Model:
         self.use_numba = use_numba
         # Default values
         self.params = {
-            'L': 50, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
+            'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
             'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10
         }
@@ -118,9 +118,11 @@ class OneD_Thin_Film_Model:
         var = self.params['var']
 
         if init_type == 'gaussian':
-            h_init = (self.h0 + 0.01) + amplitude * np.exp(-(self.x - L/2)**2/var)
+            h_init = self.h0 + 0.1 + amplitude * np.exp(-(self.x - L/2)**2/var)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
+        elif init_type == 'cap':
+            h_init = np.maximum(self.h0 + 0.1, amplitude - 1/amplitude * (self.x - L/2)**2)
         else:
             raise ValueError(f"Unknown initial condition type: {init_type}")
         
@@ -163,12 +165,11 @@ class OneD_Thin_Film_Model:
     def growth_term(self, h):
         p = self.params
         #source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max'])
-        source = p['g'] * h * (1 - h/p['h_max'])
-        switch = (1 - self.h1/h) * (1 - np.exp(self.h0 - h))
+        source = p['g'] * h/2 * (1 - h/p['h_max'])
+        switch = (1 - 2/h) * (1 - np.exp( (1 - h)/2))
         growth = source * switch
 
-        # Apply constraint that h >=h0 holds in all cases
-        return growth #np.where(h > self.h0, growth, 0.0)
+        return growth
 
     def _rhs_fdm(self, t, h):
         """RHS for finite difference method"""
@@ -177,7 +178,7 @@ class OneD_Thin_Film_Model:
         mu = - self.Pi1(h) - p['gamma'] * h_xx
         #flux = self.Laplacian @ mu
         mu_x = self.D @ mu
-        flux = self.D @ (h**3 / 3 * mu_x)
+        flux = self.D @ (h**3 * mu_x)
         return flux + self.growth_term(h)
 
 
@@ -204,13 +205,13 @@ class OneD_Thin_Film_Model:
 
 
 if __name__ == "__main__":
-    params = {'gamma': 5, 'a': 0.1, 'g': 0.1, 'amp': 1.5}
-    T = 50
+    params = {'amplitude': 2, 'h_max': 50, 'g': 1}
+    T = 1000
     model = OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
-    h_init = model.setup_initial_conditions('gaussian')
+    h_init = model.setup_initial_conditions('cap')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA')
 
     
@@ -219,7 +220,7 @@ if __name__ == "__main__":
         f = model.g1
     )
     figure_handler = fh.FigureHandler(model)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins)
+    figure_handler.plot_profiles(H.T, times)
     #figure_handler.plot_binding_energy(model.g1)
     #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     #figure_handler.plot_free_energy(H, times)

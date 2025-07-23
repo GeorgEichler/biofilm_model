@@ -38,6 +38,7 @@ class FFT_OneD_Thin_Film_Model:
         min, _ = find_first_k_minima(2, self.g1)
         self.h0 = min[0] # corresponds to 'zeroth' layer
         self.h1 = min[1] # corresponds to first layer
+        print(f"First minima of g(h) are {self.h0:.3f} and {self.h1:.3f}.")
 
     def _setup_grid_and_fft(self):
         p = self.params
@@ -59,6 +60,8 @@ class FFT_OneD_Thin_Film_Model:
             h_init = (self.h0 + 0.01) + amplitude * np.exp(-(self.x - L/2)**2/var)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
+        elif init_type == 'cap':
+            h_init = np.maximum(self.h0 + 0.1, amplitude - 1/amplitude * (self.x - L/2)**2)
         else:
             raise ValueError(f"Unknown initial condition type: {init_type}")
         
@@ -175,13 +178,13 @@ class FFT_OneD_Thin_Film_Model:
         
 if __name__ == "__main__":
     # Simulation parameters
-    T = 100
+    T = 500
     # be careful with size of timestep for the implicit part
     t_eval = np.linspace(0, T, 5)
     params = {'amplitude': 1.5, 'g': 0.1, 'gamma': 0.1, 'dt': 0.01}
 
     model = FFT_OneD_Thin_Film_Model(**params)
-    h0 = model.setup_initial_conditions('gaussian')
+    h0 = model.setup_initial_conditions('cap')
 
 
     results = model.solve(h0, T, t_eval)
