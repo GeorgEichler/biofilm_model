@@ -26,7 +26,7 @@ class FFT_OneD_Thin_Film_Model:
 
         # Default parameters
         self.params = {
-            'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
+            'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1, 'Q':1,
             'a': 0.1, 'b': np.pi/2, 'c': 1, 'd': 0.02, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10, 'dt': 0.1
         }
@@ -38,7 +38,6 @@ class FFT_OneD_Thin_Film_Model:
         min, _ = find_first_k_minima(2, self.g1)
         self.h0 = min[0] # corresponds to 'zeroth' layer
         self.h1 = min[1] # corresponds to first layer
-        print(f"First minima of g(h) are {self.h0:.3f} and {self.h1:.3f}.")
 
     def _setup_grid_and_fft(self):
         p = self.params
@@ -68,12 +67,12 @@ class FFT_OneD_Thin_Film_Model:
         return h_init
     
     # Define binding energies and corresponding disjoint pressures
-    def g1(self, h):
+    def f1(self, h):
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-h/(2*c))
 
-    def g2(self, h):
+    def f2(self, h):
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-2*h/c)
@@ -100,6 +99,7 @@ class FFT_OneD_Thin_Film_Model:
     def time_step(self, h):
         p = self.params
         dt = p['dt']
+        Q = p['Q']
 
         # calculate explicit part in real space
         pi_h = self.Pi1(h)
@@ -110,11 +110,11 @@ class FFT_OneD_Thin_Film_Model:
         growth_hat = fft(growth_h)
 
         # get explicit part -laplacian(Pi) + growth -> k2*pi_hat + growth_hat
-        N_hat = self.k2 * pi_hat + growth_hat
+        N_hat = Q * self.k2 * pi_hat + growth_hat
 
         # solve biharmonic term implicitely
         h_hat = fft(h)
-        denom = 1 + dt * p['gamma'] * self.k4
+        denom = 1 + dt * Q* p['gamma'] * self.k4
         h_hat_new = (h_hat + dt * N_hat) / denom
 
         # transform back to real space
@@ -178,13 +178,13 @@ class FFT_OneD_Thin_Film_Model:
         
 if __name__ == "__main__":
     # Simulation parameters
-    T = 500
+    T = 100
     # be careful with size of timestep for the implicit part
     t_eval = np.linspace(0, T, 5)
-    params = {'amplitude': 1.5, 'g': 0.1, 'gamma': 0.1, 'dt': 0.01}
+    params = {'amplitude': 1.5, 'g': 10**(-3), 'gamma': 1, 'dt': 0.01}
 
     model = FFT_OneD_Thin_Film_Model(**params)
-    h0 = model.setup_initial_conditions('cap')
+    h0 = model.setup_initial_conditions('gaussian')
 
 
     results = model.solve(h0, T, t_eval)

@@ -118,7 +118,7 @@ class FDM_OneD_Thin_Film_Model:
         var = self.params['var']
 
         if init_type == 'gaussian':
-            h_init = self.h0 + 0.1 + amplitude * np.exp(-(self.x - L/2)**2/var)
+            h_init = 1 + 0.01 + amplitude * np.exp(-(self.x - L/2)**2/var)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
         elif init_type == 'cap':
@@ -129,12 +129,12 @@ class FDM_OneD_Thin_Film_Model:
         return h_init
 
     # Define binding energies and corresponding disjoint pressures
-    def g1(self, h):
+    def f1(self, h):
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-h/(2*c))
 
-    def g2(self, h):
+    def f2(self, h):
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
         return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-2*h/c)
@@ -164,15 +164,15 @@ class FDM_OneD_Thin_Film_Model:
     
     def growth_term(self, h):
         p = self.params
-        #source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max']) 
-        #source = p['g'] * h/2 * (1 - h/p['h_max'])
-        #switch = (1 - 2/h) * (1 - np.exp( (1 - h)/2))
-        #growth = source * switch
-        growth = (p['g'] * h *
-                  (1 - h / p['h_max']) *
-                  (1 - self.h1 / h) *
-                  (1 - np.exp(self.h0 - h))
-        )
+        source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max']) 
+        source = p['g'] * h/2 * (1 - h/p['h_max'])
+        switch = (1 - 2.5/h) * (1 - np.exp( (1 - h)/2))
+        growth = source * switch
+        #growth = (p['g'] * h *
+        #          (1 - h / p['h_max']) *
+        #          (1 - self.h1 / h) *
+        #          (1 - np.exp(self.h0 - h))
+        #)
 
         return growth
 
@@ -210,8 +210,8 @@ class FDM_OneD_Thin_Film_Model:
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 1.2, 'h_max': 5, 'g': 0.01, 'gamma': 0.1}
-    T = 500
+    params = {'amplitude': 5, 'h_max': 5, 'g': 0.1, 'gamma': 0.1}
+    T = 100
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
