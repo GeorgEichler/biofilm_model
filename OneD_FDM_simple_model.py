@@ -64,17 +64,17 @@ class FDM_OneD_Thin_Film_Model:
         Kwargs:
             L (float): Domain length [0, L]
             N (int): Number of grid points
-            gamma (float): Surface tension
             h_max (float): maximal film height for the growth term
             g (float): coefficient of logistic growth, qoutient of growth and diffusion coefficient
-            a, b, c, d, k (float): Parameter for the binding potential
+            a, b, c, d, e, k (float): parameter for the binding potential
             h_init_type (str): Type of inital condition
+            amplitude (float): amplitude of the binding potential 
         """
         
         self.use_numba = use_numba
         # Default values
         self.params = {
-            'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1, 'Q':1.0,
+            'L': 100, 'N': 1024, 'h_max': 5, 'g': 0.1,
             'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10
         }
@@ -93,6 +93,7 @@ class FDM_OneD_Thin_Film_Model:
         N = self.params['N']
         L = self.params['L']
 
+        # Define space discretisation and grid
         self.dx = L / N
         self.x = (np.arange(1, N + 1) - 0.5) * self.dx
 
@@ -162,6 +163,7 @@ class FDM_OneD_Thin_Film_Model:
         potential = self.g1(h)
         return [np.sum(surface_energy) * self.dx, np.sum(potential) * self.dx]
     
+    # Define growth term
     def growth_term(self, h):
         p = self.params
         source = p['g'] * h * (1 - h/p['h_max'])
