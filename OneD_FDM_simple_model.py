@@ -75,7 +75,7 @@ class FDM_OneD_Thin_Film_Model:
         # Default values
         self.params = {
             'L': 100, 'N': 1024, 'gamma': 0.5, 'h_max': 5, 'g': 0.1, 'Q':1.0,
-            'a': 0.1, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
+            'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10
         }
 
@@ -85,7 +85,7 @@ class FDM_OneD_Thin_Film_Model:
         self._setup_grid_and_operators()
 
         # Calulate the first minima of the binding potential
-        min, _ = find_first_k_minima(2, self.g1)
+        min, _ = find_first_k_minima(2, self.f1)
         self.h0 = min[0]
         self.h1 = min[1]
 
@@ -118,7 +118,7 @@ class FDM_OneD_Thin_Film_Model:
         var = self.params['var']
 
         if init_type == 'gaussian':
-            h_init = 1 + 0.01 + amplitude * np.exp(-(self.x - L/2)**2/var)
+            h_init = self.h0 + 0.01 + amplitude * np.exp(-(self.x - L/2)**2/var)
         elif init_type == 'constant':
             h_init = np.ones_like(self.x)
         elif init_type == 'cap':
@@ -132,12 +132,12 @@ class FDM_OneD_Thin_Film_Model:
     def f1(self, h):
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
-        return a * np.cos(h * k + b) * np.exp(-h/c) + a*d * np.exp(-h/e)
+        return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-h/e)
 
     def Pi1(self, h):
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
-        return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + a* d/e*np.exp(-h/e)
+        return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/e*np.exp(-h/e)
 
     def f2(self, h):
         p = self.params
@@ -164,15 +164,10 @@ class FDM_OneD_Thin_Film_Model:
     
     def growth_term(self, h):
         p = self.params
-        source = p['g'] * (h - self.h0) * (1 - (h - self.h0)/p['h_max']) 
-        source = p['g'] * h/2 * (1 - h/p['h_max'])
-        switch = (1 - 2.5/h) * (1 - np.exp( (1 - h)/2))
+        source = p['g'] * h * (1 - h/p['h_max'])
+        switch = (1 - self.h1/h) * (1 - np.exp( (self.h0 - h)))
         growth = source * switch
-        #growth = (p['g'] * h *
-        #          (1 - h / p['h_max']) *
-        #          (1 - self.h1 / h) *
-        #          (1 - np.exp(self.h0 - h))
-        #)
+        #growth = np.maximum(growth, 0)
 
         return growth
 
@@ -210,8 +205,8 @@ class FDM_OneD_Thin_Film_Model:
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 5, 'h_max': 5, 'g': 0.1, 'gamma': 0.1}
-    T = 100
+    params = {'amplitude': 1.5, 'g': 0.01}
+    T = 2000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
@@ -222,11 +217,11 @@ if __name__ == "__main__":
     
     h_mins, g1_mins = find_first_k_minima(
         k_minima=5, 
-        f = model.g1
+        f = model.f1
     )
     figure_handler = fh.FigureHandler(model)
-    figure_handler.plot_profiles(H.T, times)
-    #figure_handler.plot_binding_energy(model.g1)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins)
+    #figure_handler.plot_binding_energy(model.f1)
     #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     #figure_handler.plot_free_energy(H, times)
 
