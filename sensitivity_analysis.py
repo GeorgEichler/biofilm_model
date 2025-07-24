@@ -26,7 +26,7 @@ def create_parameter_grid(parameter_values_dict):
     return param_sets
 
 def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
-                             const_params = {}):
+                             const_params = {}, use_fft = False):
     """
     Performs a sensitivity analysis on a specified model parameter
 
@@ -50,7 +50,10 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
         # Define model
         current_params = const_params.copy()
         current_params.update(p_set)
-        model = FDM_OneD_Thin_Film_Model(**current_params)
+        if use_fft:
+            model = FFT_OneD_Thin_Film_Model(**current_params)
+        else:
+            model = FDM_OneD_Thin_Film_Model(**current_params)
         
         #plot initial condition
         x_grid = model.x
@@ -62,8 +65,13 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
 
         # Solve the model
         results = model.solve(h_init, T=T, t_eval=[T])
-        H = results['H']
-        h_final = H[0]
+        if use_fft:
+            H = results['H']
+            h_final = H[0]
+        else:
+            _, Y = results
+            H = Y.T
+            h_final = H[-1]
         ax.plot(x_grid, h_final, color = line_color, label = label, lw = 2)
 
 
@@ -79,8 +87,8 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
     plt.show()
 
 if __name__ == "__main__":
-    const_params = {'amplitude': 1.5, 'dt': 0.01, 'gamma': 10}
-    param_values = {'g': [10**i for i in range(-2,3)]}
+    const_params = {'amplitude': 1.5}
+    param_values = {'g': [10**i for i in range(-2,1)]}
     param_sets = create_parameter_grid(param_values)
     run_sensitivity_analysis(
         param_sets=param_sets,
