@@ -21,7 +21,7 @@ class FigureHandler:
         plt.figure()
         plt.plot(h_array, g(h_array))
         plt.xlabel('h')
-        plt.ylabel('g(h)')
+        plt.ylabel('f(h)')
         plt.title('Binding potential')
 
     def plot_profiles(self, H, times, pot_minima = None):
