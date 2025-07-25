@@ -2,8 +2,9 @@ import numpy as np
 from scipy.sparse import diags
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
-import figure_handler as fh
+from OneD_thin_film_model import OneD_Base_Model
 from helper_functions import find_first_k_minima
+import figure_handler as fh
 import time
 from numba import njit
 
@@ -54,101 +55,31 @@ def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, a, b, c, d, k):
     return flux + source
     
 
-class FDM_OneD_Thin_Film_Model:
+class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
     """
-    A class to set up a one dimensional thin-film equation model
+    Solve thin film equation using finite difference method
     """
 
     def __init__(self, use_numba = False, **kwargs):
-        """
-        Kwargs:
-            L (float): Domain length [0, L]
-            N (int): Number of grid points
-            h_max (float): maximal film height for the growth term
-            g (float): coefficient of logistic growth, qoutient of growth and diffusion coefficient
-            a, b, c, d, e, k (float): parameter for the binding potential
-            h_init_type (str): Type of inital condition
-            amplitude (float): amplitude of the binding potential 
-        """
         
         self.use_numba = use_numba
-        # Default values
-        self.params = {
-            'L': 100, 'N': 1024, 'h_max': 5, 'g': 0.1,
-            'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
-            'amplitude': 2, 'var': 10
-        }
+        super().__init__(**kwargs)
 
-        # Update parameters with possible user-provided arguments
-        self.params.update(kwargs)
-
-        self._setup_grid_and_operators()
-
-        # Calulate the first minima of the binding potential
-        min, _ = find_first_k_minima(2, self.f1)
-        self.h0 = min[0]
-        self.h1 = min[1]
-
-    def _setup_grid_and_operators(self):
+    def _setup_numerical_operators(self):
+        """Define sparse finite difference matrices"""
         N = self.params['N']
-        L = self.params['L']
-
-        # Define space discretisation and grid
-        self.dx = L / N
-        self.x = (np.arange(1, N + 1) - 0.5) * self.dx
 
         # First derivative with periodic boundary conditions, also needed for free energy
         D = diags(diagonals=[-1,1], offsets=[-1,1], shape=(N, N), format= 'lil')
         D[0, -1] = -1
         D[-1, 0] = 1
-
         self.D = (D / (2 * self.dx)).asformat('csr')
         
         # Second derivative with periodic boundary conditions
         Laplacian = diags(diagonals=[1,-2,1], offsets=[-1,0,1], shape = (N, N), format = 'lil')
         Laplacian[0, -1] = 1
         Laplacian[-1, 0] = 1
-
         self.Laplacian = (Laplacian / (self.dx**2)).asformat('csr')
-        
-
-    # Pre-defined initial conditions
-    def setup_initial_conditions(self, init_type):
-        L = self.params['L']
-        amplitude = self.params['amplitude']
-        var = self.params['var']
-
-        if init_type == 'gaussian':
-            h_init = self.h0 + 0.01 + amplitude * np.exp(-(self.x - L/2)**2/var)
-        elif init_type == 'constant':
-            h_init = np.ones_like(self.x)
-        elif init_type == 'cap':
-            h_init = np.maximum(self.h0 + 0.1, amplitude - 1/amplitude * (self.x - L/2)**2)
-        else:
-            raise ValueError(f"Unknown initial condition type: {init_type}")
-        
-        return h_init
-
-    # Define binding energies and corresponding disjoint pressures
-    def f1(self, h):
-        p = self.params
-        a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
-        return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-h/e)
-
-    def Pi1(self, h):
-        p = self.params
-        a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
-        return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/e*np.exp(-h/e)
-
-    def f2(self, h):
-        p = self.params
-        a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
-        return a * np.cos(h * k + b) * np.exp(-h/c) + d * np.exp(-2*h/c)
-
-    def Pi2(self, h):
-        p = self.params
-        a = p['a']; b = p['b']; c = p['c']; d = p['d']; k = p['k']
-        return a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + (2*d)/(c)*np.exp(-(2*h)/(c))
     
     def free_energy(self, h):
         """Calculates the free energy functional F[h]
@@ -163,21 +94,11 @@ class FDM_OneD_Thin_Film_Model:
         potential = self.g1(h)
         return [np.sum(surface_energy) * self.dx, np.sum(potential) * self.dx]
     
-    # Define growth term
-    def growth_term(self, h):
-        p = self.params
-        source = p['g'] * h * (1 - h/p['h_max'])
-        switch = (1 - self.h1/h) * (1 - np.exp( (self.h0 - h)))
-        growth = source * switch
-        #growth = np.maximum(growth, 0)
 
-        return growth
-
-    def _rhs_fdm(self, t, h):
-        """RHS for finite difference method"""
-        p = self.params
+    def _rhs_scipy(self, t, h):
+        """RHS for finite difference method using scipy matrices"""
         h_xx = self.Laplacian @ h 
-        mu = - self.Pi1(h) - h_xx
+        mu = - self.Pi(h) - h_xx
         flux = self.Laplacian @ mu
         #mu_x = self.D @ mu
         #flux = self.D @ (h**3 * mu_x)
@@ -188,11 +109,12 @@ class FDM_OneD_Thin_Film_Model:
     def rhs(self, t, h):
         if self.use_numba:
             p = self.params
+            # Numba function is called with parameters unpacked from the dict
             return _rhs_stencil_numba(h, self.dx, p['N'], p['gamma'], 
                                   p['g'], p['h_max'], self.h0, p['a'], p['b'], 
                                   p['c'], p['d'], p['k'])
         else:
-            return self._rhs_fdm(t, h)
+            return self._rhs_scipy(t, h)
         
     # Good possible methods due to the stiffness are LSODA, BDF or Radau
     def solve(self, h0, T = 10, method = 'LSODA', t_eval = None):
@@ -208,7 +130,7 @@ class FDM_OneD_Thin_Film_Model:
 
 if __name__ == "__main__":
     params = {'amplitude': 1.5, 'g': 0.01}
-    T = 2000
+    T = 5000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
@@ -219,11 +141,11 @@ if __name__ == "__main__":
     
     h_mins, g1_mins = find_first_k_minima(
         k_minima=5, 
-        f = model.f1
+        f = model.f
     )
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H.T, times, pot_minima = h_mins)
-    #figure_handler.plot_binding_energy(model.f1)
+    #figure_handler.plot_binding_energy(model.f)
     #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     #figure_handler.plot_free_energy(H, times)
 
