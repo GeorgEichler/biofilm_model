@@ -21,7 +21,7 @@ class OneD_Base_Model(ABC):
         """
         # Default values
         self.params = {
-            'L': 100, 'N': 1024, 'gamma': 1, 'g': 0.1, 'h_max': 5,
+            'L': 100, 'N': 1024, 'gamma': 1, 'g': 0.1, 'h_max': 5, 'Q': 1.0,
             'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10, 'dt': 0.1
         }
