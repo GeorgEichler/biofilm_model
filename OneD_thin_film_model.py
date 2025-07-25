@@ -31,6 +31,8 @@ class OneD_Base_Model(ABC):
         self.dx = p['L'] / p['N'] # spacial discretisation
         self.x = (np.arange(1, p['N'] + 1) - 0.5) * self.dx
 
+        self._setup_numerical_operators()
+
         # Calculate equilibrium heights h0 and h1
         minima, _ = find_first_k_minima(2, self.f)
         self.h0 = minima[0]
