@@ -81,9 +81,9 @@ class OneD_Base_Model(ABC):
     
     def growth_term(self, h):
         p = self.params
-        source = p['g'] * h * (1 - h/p['h_max'])
-        switch = (1 - self.h1/h) * (1 - np.exp( (self.h0 - h)))
-        growth = source * switch
+        growth = (
+            p['g'] * (h - self.h1) * (1 - h/p['h_max']) * (1 - np.exp( (self.h0 - h) ))
+        )
         #growth = np.maximum(growth, 0)
 
         return growth
