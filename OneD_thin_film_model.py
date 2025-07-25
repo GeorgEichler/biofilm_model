@@ -25,6 +25,7 @@ class OneD_Base_Model(ABC):
             'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10
         }
+        self.params.update(kwargs)
 
         p = self.params
         self.dx = p['L'] / p['N'] # spacial discretisation
