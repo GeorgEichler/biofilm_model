@@ -23,7 +23,7 @@ class OneD_Base_Model(ABC):
         self.params = {
             'L': 100, 'N': 1024, 'gamma': 1, 'g': 0.1, 'h_max': 5,
             'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
-            'amplitude': 2, 'var': 10
+            'amplitude': 2, 'var': 10, 'dt': 0.1
         }
         self.params.update(kwargs)
 
