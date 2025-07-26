@@ -10,7 +10,7 @@ from numba import njit
 
 # Cannot use class methods or dictionaries for njitted functions
 @njit
-def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, a, b, c, d, k):
+def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, h_a, a, b, c, d, e, k):
     """RHS calculation using direct stencils, optimized with Numba."""
     
     # Allocate arrays for intermediate results
@@ -22,7 +22,7 @@ def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, a, b, c, d, k):
     exp_h_c = np.exp(-h / c)
     cos_term = np.cos(h * k + b)
     sin_term = np.sin(h * k + b)
-    pi1 = a * exp_h_c * (k * sin_term + 1/c * cos_term) + d/(2*c)*np.exp(-h/(2*c))
+    pi1 = a * exp_h_c * (k * sin_term + 1/c * cos_term) + d/(e)*np.exp(-h/(e))
 
     # --- Derivative calculations using stencils in a loop ---
     dx2 = dx * dx
@@ -47,10 +47,8 @@ def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, a, b, c, d, k):
 
     source = np.empty_like(h)
     for i in range(N):
-        if h[i] > h0:
-            source[i] = g * (h[i] - h0) * (1 - (h[i] - h0) / h_max)
-        else:
-            source[i] = 0.0
+        hi = h[i]
+        source[i] = g * (1.0 - hi / h_max) * (hi - h_a) * (1.0 - np.exp(h0 - hi))
 
     return flux + source
     
@@ -99,9 +97,9 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         """RHS for finite difference method using scipy matrices"""
         h_xx = self.Laplacian @ h 
         mu = - self.Pi(h) - h_xx
-        #flux = self.Laplacian @ mu
-        mu_x = self.D @ mu
-        flux = self.D @ (h**3 * mu_x)
+        flux = self.Laplacian @ mu
+        #mu_x = self.D @ mu
+        #flux = self.D @ (h**3 * mu_x)
         return flux + self.growth_term(h)
 
 
@@ -111,8 +109,8 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
             p = self.params
             # Numba function is called with parameters unpacked from the dict
             return _rhs_stencil_numba(h, self.dx, p['N'], p['gamma'], 
-                                  p['g'], p['h_max'], self.h0, p['a'], p['b'], 
-                                  p['c'], p['d'], p['k'])
+                                  p['g'], p['h_max'], self.h0, self.ha, p['a'], p['b'], 
+                                  p['c'], p['d'], p['e'], p['k'])
         else:
             return self._rhs_scipy(t, h)
         
@@ -129,14 +127,16 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 2, 'g': 0.01}
+    params = {'amplitude': 1.5, 'g': 0.01}
     T = 1000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
-    h_init = model.setup_initial_conditions('gaussian')
+    h_init = model.setup_initial_conditions('cap')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA')
+
+    model.save_profiles(times, H, "Results/thinfilm_profiles.npz")
 
     
     h_mins, g1_mins = find_first_k_minima(
