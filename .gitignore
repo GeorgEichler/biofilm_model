@@ -1,5 +1,5 @@
 #folders to hide
-output/
+Results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
