@@ -36,7 +36,7 @@ class OneD_Base_Model(ABC):
         # Calculate equilibrium heights h0 and h1
         minima, _ = find_first_k_minima(2, self.f)
         self.h0 = minima[0]
-        self.h1 = minima[1]
+        self.ha = 0.8 # activation point
 
     @abstractmethod
     def _setup_numerical_operators(self):
@@ -62,7 +62,7 @@ class OneD_Base_Model(ABC):
         elif init_type == 'constant':
             h_init = np.full_like(self.x, self.h0 + 0.5)
         elif init_type == 'cap':
-            h_init = np.maximum(self.h0 + 0.1, amplitude - 1/amplitude * (self.x - L/2)**2)
+            h_init = np.maximum(self.h0 + 0.01, amplitude - 1/var * (self.x - L/2)**2)
         else:
             raise ValueError(f"Unknown initial condition type: {init_type}")
         
@@ -82,7 +82,7 @@ class OneD_Base_Model(ABC):
     def growth_term(self, h):
         p = self.params
         growth = (
-            p['g'] * (h - self.h1) * (1 - h/p['h_max']) * (1 - np.exp( (self.h0 - h) ))
+            p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( (self.h0 - h) ))
         )
         #growth = np.maximum(growth, 0)
 

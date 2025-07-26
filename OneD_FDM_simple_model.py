@@ -99,9 +99,9 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         """RHS for finite difference method using scipy matrices"""
         h_xx = self.Laplacian @ h 
         mu = - self.Pi(h) - h_xx
-        flux = self.Laplacian @ mu
-        #mu_x = self.D @ mu
-        #flux = self.D @ (h**3 * mu_x)
+        #flux = self.Laplacian @ mu
+        mu_x = self.D @ mu
+        flux = self.D @ (h**3 * mu_x)
         return flux + self.growth_term(h)
 
 
@@ -129,8 +129,8 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 1.5, 'g': 0.01}
-    T = 5000
+    params = {'amplitude': 2, 'g': 0.01}
+    T = 1000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)

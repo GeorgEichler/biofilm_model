@@ -113,7 +113,7 @@ if __name__ == "__main__":
     T = 100
     # be careful with size of timestep for the implicit part
     t_eval = np.linspace(0, T, 5)
-    params = {'amplitude': 1.5, 'g': 0.1, 'gamma': 1, 'dt': 0.0001}
+    params = {'amplitude': 1.5, 'g': 0.1, 'gamma': 1, 'dt': 0.01}
 
     model = FFT_OneD_Thin_Film_Model(**params)
     h0 = model.setup_initial_conditions('gaussian')
