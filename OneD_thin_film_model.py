@@ -87,3 +87,30 @@ class OneD_Base_Model(ABC):
         #growth = np.maximum(growth, 0)
 
         return growth
+    
+    def save_profiles(self, t: np.ndarray, H: np.ndarray, filename: str):
+        """
+        Save time points and height profiles to a npz file
+
+        Parameters:
+        t: 1D array of time values
+        H: 2D array of height values
+        filename: file path (should end in .npz)
+        """
+        np.savez_compressed(filename, t=t, H=H)
+        print(f"Saved profiles to {filename}")
+
+    @staticmethod
+    def load_profiles(filename: str):
+        """
+        Load time points and height profiles from npz file
+
+        Returns:
+        t: 1D array of time values
+        H: 2D array of height values
+        """
+        data = np.load(filename)
+        t = data['t']
+        H = data['H']
+        print(f"Loaded profile from {filename}")
+        return t, H
