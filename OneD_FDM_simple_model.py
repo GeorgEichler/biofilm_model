@@ -4,6 +4,7 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from OneD_thin_film_model import OneD_Base_Model
 from helper_functions import find_first_k_minima
+from solver_wrapper import SolveIVPProgressWrapper
 import figure_handler as fh
 import time
 from numba import njit
@@ -51,7 +52,6 @@ def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, h_a, a, b, c, d, e, k):
         source[i] = g * (1.0 - hi / h_max) * (hi - h_a) * (1.0 - np.exp(h0 - hi))
 
     return flux + source
-    
 
 class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
     """
@@ -120,9 +120,11 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         print(f"Start integration using finite differences and {method} method in [0, {T}]...")
         if t_eval is None:
             t_eval = np.linspace(0, T, 5)
-        sol = solve_ivp(self.rhs, [0, T], h0, t_eval = t_eval, method = method)
+
+        rhs_to_use = SolveIVPProgressWrapper(self.rhs, T, report_step_percent=5)
+        sol = solve_ivp(rhs_to_use, [0, T], h0, t_eval = t_eval, method = method)
         end = time.time()
-        print(f"Integration finished in {end - start:.3f}s.")
+        print(f"\nIntegration finished in {end - start:.3f}s.")
         return sol.t, sol.y
 
 
