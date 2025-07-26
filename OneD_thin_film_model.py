@@ -57,7 +57,7 @@ class OneD_Base_Model(ABC):
     def setup_initial_conditions(self, init_type):
         p = self.params
         L, amplitude, var = p['L'], p['amplitude'], p['var']
-
+        
         if init_type == 'gaussian':
             h_init = (self.h0 + 0.01) + amplitude * np.exp(-(self.x - L/2)**2/var)
         elif init_type == 'constant':
@@ -85,7 +85,7 @@ class OneD_Base_Model(ABC):
         growth = (
             p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( (self.h0 - h) ))
         )
-        #growth = np.maximum(growth, 0)
+        #growth = np.maximum(growth, 0) # alternative growth term with truncated growth
 
         return growth
     

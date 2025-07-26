@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from OneD_thin_film_model import OneD_Base_Model
 class FigureHandler:
     """
     Handling of plots for the thin-film equation model
     """
-    def __init__(self, model):
+    def __init__(self, model:OneD_Base_Model):
         self.model = model
         plt.rcParams.update({
             "axes.titlesize": 18,
@@ -43,6 +43,17 @@ class FigureHandler:
         plt.ylabel('h(x,t)')
         plt.legend(loc = 'right')
         plt.grid(True)
+
+    def plot_growth(self, H, times):
+        x = self.model.x
+        plt.figure()
+        for h, t in zip(H, times):
+            growth = self.model.growth_term(h)
+            plt.plot(x, growth, label = f"t={t:.2f}")
+
+        plt.xlabel('x')
+        plt.ylabel('G(h(x))')
+        plt.legend(loc = 'right')
 
     def plot_free_energy(self, H, times):
         # Convert to numpy array to use slice operations
