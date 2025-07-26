@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from abc import ABC, abstractmethod
 from helper_functions import find_first_k_minima
 
@@ -97,6 +98,11 @@ class OneD_Base_Model(ABC):
         H: 2D array of height values
         filename: file path (should end in .npz)
         """
+
+        folder = os.path.dirname(filename)
+        if folder and not os.path.exists(folder):
+            os.makedirs(folder, exist_ok = True)
+
         np.savez_compressed(filename, t=t, H=H)
         print(f"Saved profiles to {filename}")
 
