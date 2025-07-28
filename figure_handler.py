@@ -1,12 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 from OneD_thin_film_model import OneD_Base_Model
 class FigureHandler:
     """
     Handling of plots for the thin-film equation model
     """
-    def __init__(self, model:OneD_Base_Model):
+    def __init__(self, model:OneD_Base_Model, output_dir: str = "Results/plots"):
         self.model = model
+        self.output_dir = output_dir
+        os.makedirs(self.output_dir, exist_ok = True)
+
         plt.rcParams.update({
             "axes.titlesize": 18,
             "axes.labelsize": 16,
@@ -16,15 +20,24 @@ class FigureHandler:
             "figure.dpi": 100 #change resolution, standard is 100
         })
 
-    def plot_binding_energy(self, g, h_min = 0, h_max = 10, nh = 1001):
+    def save_figure(self, filename: str):
+        if not filename.endswith(".png"):
+            filename += ".png"
+        path = os.path.join(self.output_dir, filename)
+        plt.savefig(path, bbox_inches = 'tight')
+        print(f"Saved figure: {path}")
+
+    def plot_binding_energy(self, g, h_min = 0, h_max = 10, nh = 1001, filename = None):
         h_array = np.linspace(h_min, h_max, nh)
         plt.figure()
         plt.plot(h_array, g(h_array))
         plt.xlabel('h')
         plt.ylabel('f(h)')
         plt.title('Binding potential')
+        if filename:
+            self.save_figure(filename)
 
-    def plot_profiles(self, H, times, pot_minima = None):
+    def plot_profiles(self, H, times, pot_minima = None, filename = None):
         """
         Plot height profiles at different times
         Parameters:
@@ -43,8 +56,10 @@ class FigureHandler:
         plt.ylabel('h(x,t)')
         plt.legend(loc = 'right')
         plt.grid(True)
+        if filename:
+            self.save_figure(filename)
 
-    def plot_growth(self, H, times):
+    def plot_growth(self, H, times, filename = None):
         x = self.model.x
         plt.figure()
         for h, t in zip(H, times):
@@ -54,8 +69,10 @@ class FigureHandler:
         plt.xlabel('x')
         plt.ylabel('G(h(x))')
         plt.legend(loc = 'right')
+        if filename:
+            self.save_figure(filename)
 
-    def plot_free_energy(self, H, times):
+    def plot_free_energy(self, H, times, filename = None):
         # Convert to numpy array to use slice operations
         energy_values = np.array([self.model.free_energy(H[:,i]) for i in range(len(times))])
         surface_values = energy_values[:, 0]
@@ -69,3 +86,5 @@ class FigureHandler:
         plt.title('Free energy evolution')
         plt.grid(True)
         plt.legend()
+        if filename:
+            self.save_figure(filename)

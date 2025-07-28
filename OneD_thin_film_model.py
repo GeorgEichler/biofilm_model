@@ -22,7 +22,7 @@ class OneD_Base_Model(ABC):
         """
         # Default values
         self.params = {
-            'L': 100, 'N': 1024, 'gamma': 1, 'g': 0.1, 'h_max': 5, 'Q': 1.0,
+            'L': 100, 'N': 1024, 'gamma': 1, 'g': 0.1, 'ha': 0.8, 'h_max': 5, 'Q': 1.0,
             'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10, 'dt': 0.1
         }
@@ -37,7 +37,7 @@ class OneD_Base_Model(ABC):
         # Calculate equilibrium heights h0 and h1
         minima, _ = find_first_k_minima(2, self.f)
         self.h0 = minima[0]
-        self.ha = 0.8 # activation point
+        self.ha = p['ha'] # activation point
 
     @abstractmethod
     def _setup_numerical_operators(self):
@@ -89,7 +89,7 @@ class OneD_Base_Model(ABC):
 
         return growth
     
-    def save_profiles(self, t: np.ndarray, H: np.ndarray, filename: str):
+    def save_profile_values(self, t: np.ndarray, H: np.ndarray, filename: str):
         """
         Save time points and height profiles to a npz file
 
