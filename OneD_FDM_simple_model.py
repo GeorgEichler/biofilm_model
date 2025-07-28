@@ -89,7 +89,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         p = self.params
         dhdx = self.D @ h
         surface_energy = 0.5 * p['gamma'] * dhdx**2
-        potential = self.g1(h)
+        potential = self.f(h)
         return [np.sum(surface_energy) * self.dx, np.sum(potential) * self.dx]
     
 
@@ -159,8 +159,8 @@ if __name__ == "__main__":
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H.T, times, pot_minima = h_mins)
     figure_handler.plot_growth(H.T, times)
-    #figure_handler.plot_binding_energy(model.f)
+    figure_handler.plot_binding_energy(model.f)
     #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
-    #figure_handler.plot_free_energy(H, times)
+    figure_handler.plot_free_energy(H, times)
 
     plt.show()
