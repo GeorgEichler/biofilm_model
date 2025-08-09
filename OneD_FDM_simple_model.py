@@ -140,13 +140,13 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 1.5, 'g': 0.1}
+    params = {'amplitude': 1.5, 'g': 10**(-1), 'c':20}
     T = 1000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
     t_plot = np.linspace(0, T, 5)
 
-    h_init = model.setup_initial_conditions('cap')
+    h_init = model.setup_initial_conditions('gaussian')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA')
 
     model.save_profile_values(times, H, "Results/values/thinfilm_profiles.npz")
@@ -158,9 +158,9 @@ if __name__ == "__main__":
     )
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = 'thin_film_g01')
-    figure_handler.plot_growth(H.T, times)
-    figure_handler.plot_binding_energy(model.f)
+    #figure_handler.plot_growth(H.T, times)
+    #figure_handler.plot_binding_energy(model.f)
     #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
-    figure_handler.plot_free_energy(H, times)
+    #figure_handler.plot_free_energy(H, times)
 
     plt.show()
