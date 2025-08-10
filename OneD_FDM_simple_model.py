@@ -99,16 +99,17 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         """
         x = self.x
         #set the boundaries of the interval [x0,x1] where the mean will be computed
-        x0 = 10
-        x1 = 90
+        x0 = 20
+        x1 = 80
 
         # Indices of interior grid points strictly between [x0, x1]
         i0 = np.searchsorted(x, x0, side = 'left')
         i1 = np.searchsorted(x, x1, side = 'right')
 
-        mean_h = np.mean(h[i0:i1])
+        # Correct the precursor height
+        mean_h = np.mean(h[i0:i1] - self.h0)
 
-        return mean_h - self.h1
+        return mean_h - (self.h1 - self.h0)
     
     # We need to tell the solver to stop when this event occurs.
     # We do this by setting an attribute on the function object itself.
