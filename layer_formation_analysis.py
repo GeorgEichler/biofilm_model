@@ -55,14 +55,14 @@ def growth_parameter_analysis(g_values, base_params = None, T = 10000,
 
         
     plt.figure()
-    plt.plot(g_values, t_events, marker = 'o')
+    plt.plot(g_values, t_events, marker = 'o-')
     plt.xscale('log')
     plt.xlabel('g')
     plt.ylabel('t_event')
     plt.title('Time to first layer')
 
     plt.figure()
-    plt.plot(g_values, h_centers, marker = 'o')
+    plt.plot(g_values, h_centers, marker = 'o-')
     plt.xscale('log')
     plt.xlabel('g')
     plt.ylabel('h(t_event, L/2)')
@@ -70,7 +70,7 @@ def growth_parameter_analysis(g_values, base_params = None, T = 10000,
     plt.show()
 
 if __name__ == '__main__':
-    g_values = [0.1]
+    g_values = [0.005, 0.01, 0.05, 0.1, 0.5, 1]
 
-    growth_parameter_analysis(g_values=g_values)
+    growth_parameter_analysis(g_values=g_values, T = 20000)
 
