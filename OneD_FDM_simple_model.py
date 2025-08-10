@@ -88,7 +88,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         """
         p = self.params
         dhdx = self.D @ h
-        surface_energy = 0.5 * p['gamma'] * dhdx**2
+        surface_energy = 0.5 * dhdx**2
         potential = self.f(h)
         return [np.sum(surface_energy) * self.dx, np.sum(potential) * self.dx]
     
@@ -96,7 +96,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
     def _rhs_scipy(self, t, h):
         """RHS for finite difference method using scipy matrices"""
         h_xx = self.Laplacian @ h 
-        mu = - self.Pi(h) - h_xx
+        mu = - self.epsilon * self.Pi(h) - h_xx
         flux = self.Laplacian @ mu
         #mu_x = self.D @ mu
         #flux = self.D @ (h**3 * mu_x)
@@ -140,7 +140,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 1.5, 'g': 10**(-1), 'c':20}
+    params = {'amplitude': 1.5, 'g': 10**(-1), 'c':1}
     T = 1000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
