@@ -35,42 +35,51 @@ def run_until_first_layer(g, base_params, T = 10000, method = 'LSODA', init_type
 
     return t_event, h_center
 
-def growth_parameter_analysis(g_values, base_params = None, T = 10000,
+def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = None, T = 10000,
                               method = 'LSODA', init_type = 'gaussian'):
     if base_params is None:
         base_params = {}
     
-    t_events = np.zeros_like(g_values, dtype = float)
-    h_centers = np.zeros_like(g_values, dtype = float)
+    fig_t, ax_t = plt.subplots()
+    fig_h, ax_h = plt.subplots()
 
-    for i, g in enumerate(g_values):
-        print(f'[{i+1}/{len(g_values)}] Running with g = {g:.6g}...')
-        t_event, h_center = run_until_first_layer(
-            g, base_params, T = T, method = method, init_type=init_type
-        )
-        t_events[i] = t_event
-        h_centers[i] = h_center
-        if np.isnan(t_event):
-            print(' -> Event NOT reached within T = {T}; recorded as NAN')
-
+    for ei, eps in enumerate(epsilon_values):
+        print(f'=== Epsilon {eps} ({ei+1}/{len(epsilon_values)}) ===')
+        params = {**base_params, 'epsilon': float(eps)}
         
-    plt.figure()
-    plt.plot(g_values, t_events, marker = 'o-')
-    plt.xscale('log')
-    plt.xlabel('g')
-    plt.ylabel('t_event')
-    plt.title('Time to first layer')
+        t_events = np.zeros_like(g_values, dtype = float)
+        h_centers = np.zeros_like(g_values, dtype = float)
 
-    plt.figure()
-    plt.plot(g_values, h_centers, marker = 'o-')
-    plt.xscale('log')
-    plt.xlabel('g')
-    plt.ylabel('h(t_event, L/2)')
-    plt.title('Height of middle profile')
+        for i, g in enumerate(g_values):
+            print(f'[{i+1}/{len(g_values)}] Running with g = {g:.6g}...')
+            t_event, h_center = run_until_first_layer(
+                g, base_params, T = T, method = method, init_type=init_type
+            )
+            t_events[i] = t_event
+            h_centers[i] = h_center
+            if np.isnan(t_event):
+                print(' -> Event NOT reached within T = {T}; recorded as NAN')
+        label = rf'$\epsilon = {eps}$'
+        ax_t.plot(g_values, t_events, marker = 'o', linestyle = '-', label = label)
+        ax_h.plot(g_values, h_centers, marker = 'o', linestyle = '-', label = label)
+
+    ax_t.set_xscale('log')
+    ax_t.set_xlabel('g')
+    ax_t.set_ylabel('t_event')
+    ax_t.set_title('Time to first layer')
+    ax_t.legend()
+
+    ax_h.set_xscale('log')
+    ax_h.set_xlabel('g')
+    ax_h.set_ylabel('h(t_event, L/2)')
+    ax_h.set_title('Height at middle of profile')
+    ax_h.legend()
+        
     plt.show()
 
 if __name__ == '__main__':
     g_values = [0.005, 0.01, 0.05, 0.1, 0.5, 1]
+    epsilon_values = [0.5, 1, 2]
 
-    growth_parameter_analysis(g_values=g_values, T = 20000)
+    growth_parameter_analysis(g_values=g_values, epsilon_values=epsilon_values, T = 20000)
 
