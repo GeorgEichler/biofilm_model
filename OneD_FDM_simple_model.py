@@ -92,11 +92,27 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         potential = p['epsilon'] * self.f(h)
         return [np.sum(surface_energy_density) * self.dx, np.sum(potential) * self.dx]
     
+    def _event_mean_height_first_layer(self, t, h):
+        """
+        Event function for solve_ivp
+        Triggers when mean height of thin film reaches first layer
+        """
+
+        return np.mean(h) - self.h1
+    
+    # We need to tell the solver to stop when this event occurs.
+    # We do this by setting an attribute on the function object itself.
+    _event_mean_height_first_layer.terminal = True
+
+    # We also want the event to trigger only when mean(h) is increasing through 1.
+    # This prevents it from triggering if the mean somehow starts above 1 and decreases.
+    _event_mean_height_first_layer.direction = 1 # Trigger when event function goes from - to +
+    
 
     def _rhs_scipy(self, t, h):
         """RHS for finite difference method using scipy matrices"""
         h_xx = self.Laplacian @ h 
-        mu = - self.epsilon * self.Pi(h) - h_xx
+        mu = - self.params['epsilon'] * self.Pi(h) - h_xx
         flux = self.Laplacian @ mu
         #mu_x = self.D @ mu
         #flux = self.D @ (h**3 * mu_x)
@@ -115,16 +131,33 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
             return self._rhs_scipy(t, h)
         
     # Good possible methods due to the stiffness are LSODA, BDF or Radau
-    def solve(self, h0, T = 10, method = 'LSODA', t_eval = None):
+    def solve(self, h0, T = 10, method = 'LSODA', t_eval = None, event = False):
         start = time.time()
         print(f"Start integration using finite differences and {method} method in [0, {T}]...")
         if t_eval is None:
             t_eval = np.linspace(0, T, 5)
 
         rhs_to_use = SolveIVPProgressWrapper(self.rhs, T, report_step_percent=5)
-        sol = solve_ivp(rhs_to_use, [0, T], h0, t_eval = t_eval, method = method)
+        if event:
+            sol = solve_ivp(
+                rhs_to_use,
+                [0, T], 
+                h0, 
+                t_eval = t_eval, 
+                method = method,
+                events=self._event_mean_height_first_layer
+                )
+        else:
+            sol = solve_ivp(rhs_to_use, [0, T], h0, t_eval=t_eval, method = method)
         end = time.time()
         print(f"\nIntegration finished in {end - start:.3f}s.")
+
+        # Check if the simulation was terminated by the event
+        if sol.status == 1:
+            print(f"Event triggered: Mean first layer reached at t = {sol.t_events[0][0]:.4f}")
+        elif sol.status == 0:
+            print("Integration finished because the end time T was reached.")
+
         return sol.t, sol.y
     
     def calculate_contact_angles(self, h, h_contact_threshold = None):
@@ -140,7 +173,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 1.5, 'g': 10**(-1), 'c':1}
+    params = {'amplitude': 1.0, 'g': 10**(-2)}
     T = 1000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)

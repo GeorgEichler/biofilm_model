@@ -24,7 +24,7 @@ class OneD_Base_Model(ABC):
         self.params = {
             'L': 100, 'N': 1024, 'gamma': 1, 'g': 0.1, 'ha': 0.8, 'h_max': 5, 'Q': 1.0, 'epsilon': 1.0,
             'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
-            'amplitude': 2, 'var': 10, 'dt': 0.1
+            'amplitude': 1.0, 'var': 10, 'dt': 0.1
         }
         self.params.update(kwargs)
 
@@ -37,6 +37,7 @@ class OneD_Base_Model(ABC):
         # Calculate equilibrium heights h0 and h1
         minima, _ = find_first_k_minima(2, self.f)
         self.h0 = minima[0]
+        self.h1 = minima[1]
         self.ha = p['ha'] # activation point
 
     @abstractmethod
