@@ -97,8 +97,18 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         Event function for solve_ivp
         Triggers when mean height of thin film reaches first layer
         """
+        x = self.x
+        #set the boundaries of the interval [x0,x1] where the mean will be computed
+        x0 = 10
+        x1 = 90
 
-        return np.mean(h) - self.h1
+        # Indices of interior grid points strictly between [x0, x1]
+        i0 = np.searchsorted(x, x0, side = 'left')
+        i1 = np.searchsorted(x, x1, side = 'right')
+
+        mean_h = np.mean(h[i0:i1])
+
+        return mean_h - self.h1
     
     # We need to tell the solver to stop when this event occurs.
     # We do this by setting an attribute on the function object itself.
@@ -173,13 +183,13 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 1.0, 'g': 0.01}
-    T = 4000
+    params = {'amplitude': 1.0, 'g': 0.1}
+    T = 1000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
 
     h_init = model.setup_initial_conditions('gaussian')
-    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA')
+    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = True)
 
     model.save_profile_values(times, H, "Results/values/thinfilm_profiles.npz")
 
