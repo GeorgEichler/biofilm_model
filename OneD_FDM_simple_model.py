@@ -11,7 +11,7 @@ from numba import njit
 
 # Cannot use class methods or dictionaries for njitted functions
 @njit
-def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, h_a, a, b, c, d, e, k):
+def _rhs_stencil_numba(h, dx, N, gamma, epsilon, g, h_max, h0, h_a, a, b, c, d, e, k):
     """RHS calculation using direct stencils, optimized with Numba."""
     
     # Allocate arrays for intermediate results
@@ -36,7 +36,7 @@ def _rhs_stencil_numba(h, dx, N, gamma, g, h_max, h0, h_a, a, b, c, d, e, k):
         # Second derivative of h
         h_xx[i] = (h[i_plus_1] - 2 * h[i] + h[i_minus_1]) / dx2
     
-    mu = -pi1 - gamma * h_xx
+    mu = -epsilon * pi1 - gamma * h_xx
     
         
     for i in range(N):
@@ -88,9 +88,9 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         """
         p = self.params
         dhdx = self.D @ h
-        surface_energy = 0.5 * dhdx**2
-        potential = self.f(h)
-        return [np.sum(surface_energy) * self.dx, np.sum(potential) * self.dx]
+        surface_energy_density = 0.5 * dhdx**2
+        potential = p['epsilon'] * self.f(h)
+        return [np.sum(surface_energy_density) * self.dx, np.sum(potential) * self.dx]
     
 
     def _rhs_scipy(self, t, h):
@@ -108,7 +108,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         if self.use_numba:
             p = self.params
             # Numba function is called with parameters unpacked from the dict
-            return _rhs_stencil_numba(h, self.dx, p['N'], p['gamma'], 
+            return _rhs_stencil_numba(h, self.dx, p['N'], p['gamma'], p['epsilon'], 
                                   p['g'], p['h_max'], self.h0, self.ha, p['a'], p['b'], 
                                   p['c'], p['d'], p['e'], p['k'])
         else:
