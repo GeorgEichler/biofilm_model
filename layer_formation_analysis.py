@@ -58,7 +58,7 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
             t_events[i] = t_event
             h_centers[i] = h_center
             if np.isnan(t_event):
-                print(' -> Event NOT reached within T = {T}; recorded as NAN')
+                print(f' -> Event NOT reached within T = {T}; recorded as NAN')
         label = rf'$\epsilon = {eps}$'
         ax_t.plot(g_values, t_events, marker = 'o', linestyle = '-', label = label)
         ax_h.plot(g_values, h_centers, marker = 'o', linestyle = '-', label = label)
@@ -67,19 +67,19 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
     ax_t.set_xlabel('g')
     ax_t.set_ylabel('t_event')
     ax_t.set_title('Time to first layer')
-    ax_t.legend()
+    #ax_t.legend()
 
     ax_h.set_xscale('log')
     ax_h.set_xlabel('g')
     ax_h.set_ylabel('h(t_event, L/2)')
     ax_h.set_title('Height at middle of profile')
-    ax_h.legend()
+    #ax_h.legend()
         
     plt.show()
 
 if __name__ == '__main__':
     g_values = [0.005, 0.01, 0.05, 0.1, 0.5, 1]
-    epsilon_values = [0.5, 1, 2]
+    #epsilon_values = [0.5, 1, 2]
 
-    growth_parameter_analysis(g_values=g_values, epsilon_values=epsilon_values, T = 20000)
+    growth_parameter_analysis(g_values=g_values, T = 20000)
 
