@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
+import os
 from scipy.integrate import solve_ivp
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
@@ -38,7 +39,7 @@ def run_until_first_layer(g, base_params, T = 10000, method = 'LSODA', init_type
 
 def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = None, T = 10000,
                               method = 'LSODA', init_type = 'gaussian',
-                              csv_filename='simulation_results.csv'):
+                              csv_filename = None):
     """
     Run multiple sensitivity analysis simulations for multiple parameter values
     Save output to CSV and generate log-plots
@@ -95,18 +96,24 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
         
     plt.show()
 
-    fieldnames = ['epsilon', 'g', 't_event', 'h_center']
-    with open(csv_filename, 'w', newline= '') as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows()
+    if csv_filename is not None:
+        os.makedirs("Results/data", exist_ok = True)
 
-    print(f"\nSaved simulatipn results to: {csv_filename}")
+        fieldnames = ['epsilon', 'g', 't_event', 'h_center']
+        with open(csv_filename, 'w', newline= '') as f:
+            writer = csv.DictWriter(f, fieldnames = fieldnames)
+            writer.writeheader()
+            writer.writerows(results)
+
+        print(f"\nSaved simulatipn results to: {csv_filename}")
 
 if __name__ == '__main__':
     #g_values = [0.005, 0.01, 0.05, 0.1, 0.5, 1]
     g_values = [0.025, 0.05, 0.075, 0.1, 0.25]
-    epsilon_values = [1, 2]
+    epsilon_values = [1]
 
-    growth_parameter_analysis(g_values=g_values, epsilon_values=epsilon_values, T = 20000)
+    filename = "Results/data/first_layer_g_eps.csv"
+
+    growth_parameter_analysis(g_values=g_values, epsilon_values=epsilon_values,
+                              T = 20000, csv_filename = filename)
 
