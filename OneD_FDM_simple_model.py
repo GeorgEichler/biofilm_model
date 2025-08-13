@@ -106,8 +106,9 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         i0 = np.searchsorted(x, x0, side = 'left')
         i1 = np.searchsorted(x, x1, side = 'right')
 
-        # Correct the precursor height
-        mean_h = np.mean(h[i0:i1] - self.h0)
+        # Correct the precursor height and use trapezoidal rule for integration 
+        h_no_precursor = h[i0:i1] - self.h0
+        mean_h = np.trapezoidal(h_no_precursor, self.x[i0:i1])
 
         return mean_h - (self.h1 - self.h0)
     
@@ -184,13 +185,13 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 1.0, 'g': 0.1}
-    T = 1000
+    params = {'amplitude': 1.0, 'g': 0.1, 'epsilon': 5}
+    T = 500
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
 
     h_init = model.setup_initial_conditions('gaussian')
-    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = True)
+    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)
 
     model.save_profile_values(times, H, "Results/values/thinfilm_profiles.npz")
 
