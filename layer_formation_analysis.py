@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import csv
 from scipy.integrate import solve_ivp
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
@@ -36,15 +37,20 @@ def run_until_first_layer(g, base_params, T = 10000, method = 'LSODA', init_type
     return t_event, h_center
 
 def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = None, T = 10000,
-                              method = 'LSODA', init_type = 'gaussian'):
+                              method = 'LSODA', init_type = 'gaussian',
+                              csv_filename='simulation_results.csv'):
     """
     Run multiple sensitivity analysis simulations for multiple parameter values
+    Save output to CSV and generate log-plots
     """
     if base_params is None:
         base_params = {}
     
     fig_t, ax_t = plt.subplots()
     fig_h, ax_h = plt.subplots()
+
+    # list of dicts for each run
+    results = []
 
     for ei, eps in enumerate(epsilon_values):
         print(f'=== Epsilon {eps} ({ei+1}/{len(epsilon_values)}) ===')
@@ -56,10 +62,18 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
         for i, g in enumerate(g_values):
             print(f'[{i+1}/{len(g_values)}] Running with g = {g:.6g}...')
             t_event, h_center = run_until_first_layer(
-                g, base_params, T = T, method = method, init_type=init_type
+                g, params, T = T, method = method, init_type=init_type
             )
             t_events[i] = t_event
             h_centers[i] = h_center
+
+            results.append({
+                'epsilon': eps,
+                'g': g,
+                't_event': t_event,
+                'h_center': h_center
+            })
+
             if np.isnan(t_event):
                 print(f' -> Event NOT reached within T = {T}; recorded as NAN')
         label = rf'$\epsilon = {eps}$'
@@ -71,20 +85,28 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
     ax_t.set_xlabel('g')
     ax_t.set_ylabel('t_event')
     ax_t.set_title('Time to first layer')
-    #ax_t.legend()
+    ax_t.legend()
 
     ax_h.set_xscale('log')
     ax_h.set_xlabel('g')
     ax_h.set_ylabel('h(t_event, L/2)')
     ax_h.set_title('Height at middle of profile')
-    #ax_h.legend()
+    ax_h.legend()
         
     plt.show()
 
+    fieldnames = ['epsilon', 'g', 't_event', 'h_center']
+    with open(csv_filename, 'w', newline= '') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows()
+
+    print(f"\nSaved simulatipn results to: {csv_filename}")
+
 if __name__ == '__main__':
     #g_values = [0.005, 0.01, 0.05, 0.1, 0.5, 1]
-    g_values = [0.05, 0.075, 0.1, 0.25]
-    #epsilon_values = [0.5, 1, 2]
+    g_values = [0.025, 0.05, 0.075, 0.1, 0.25]
+    epsilon_values = [1, 2]
 
-    growth_parameter_analysis(g_values=g_values, T = 20000)
+    growth_parameter_analysis(g_values=g_values, epsilon_values=epsilon_values, T = 20000)
 
