@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 import csv
 import os
 from scipy.integrate import solve_ivp
@@ -53,6 +54,9 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
     # list of dicts for each run
     results = []
 
+    print("Begin simulation...")
+    start = time.time()
+
     for ei, eps in enumerate(epsilon_values):
         print(f'=== Epsilon {eps} ({ei+1}/{len(epsilon_values)}) ===')
         params = {**base_params, 'epsilon': float(eps)}
@@ -61,6 +65,8 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
         h_centers = np.zeros_like(g_values, dtype = float)
 
         for i, g in enumerate(g_values):
+            
+            start_single_simulation = time.time()
             print(f'[{i+1}/{len(g_values)}] Running with g = {g:.6g}...')
             t_event, h_center = run_until_first_layer(
                 g, params, T = T, method = method, init_type=init_type
@@ -77,10 +83,16 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
 
             if np.isnan(t_event):
                 print(f' -> Event NOT reached within T = {T}; recorded as NAN')
+
+            end_single_simulation = time.time()
+            print(f"Time for simulation step: {end_single_simulation - start_single_simulation}s.")
         label = rf'$\epsilon = {eps}$'
         ax_t.plot(g_values, t_events, marker = 'o', linestyle = '-', label = label)
         ax_h.plot(g_values, h_centers, marker = 'o', linestyle = '-', label = label)
 
+
+    end = time.time()
+    print(f"Full simulation time: {end - start}s.")
     # Set scales and label for the plots
     ax_t.set_xscale('log')
     ax_t.set_xlabel('g')
@@ -105,12 +117,12 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
             writer.writeheader()
             writer.writerows(results)
 
-        print(f"\nSaved simulatipn results to: {csv_filename}")
+        print(f"\nSaved simulation results to: {csv_filename}")
 
 if __name__ == '__main__':
     #g_values = [0.005, 0.01, 0.05, 0.1, 0.5, 1]
     g_values = [0.025, 0.05, 0.075, 0.1, 0.25]
-    epsilon_values = [1]
+    epsilon_values = [1, 5]
 
     filename = "Results/data/first_layer_g_eps.csv"
 
