@@ -98,17 +98,18 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         Triggers when mean height of thin film reaches first layer
         """
         x = self.x
+        L = self.params['L']
         #set the boundaries of the interval [x0,x1] where the mean will be computed
-        x0 = 20
-        x1 = 80
+        x0 = 0.2*L
+        x1 = 0.8*L
 
-        # Indices of interior grid points strictly between [x0, x1]
+        # Indices of the boundary interval points [x0, x1]
         i0 = np.searchsorted(x, x0, side = 'left')
         i1 = np.searchsorted(x, x1, side = 'right')
 
         # Correct the precursor height and use trapezoidal rule for integration 
         h_no_precursor = h[i0:i1] - self.h0
-        mean_h = np.trapezoidal(h_no_precursor, self.x[i0:i1])
+        mean_h = np.trapezoid(h_no_precursor, x[i0:i1])/(x1-x0)
 
         return mean_h - (self.h1 - self.h0)
     
