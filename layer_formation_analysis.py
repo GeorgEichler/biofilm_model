@@ -6,7 +6,7 @@ from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 
 def run_until_first_layer(g, base_params, T = 10000, method = 'LSODA', init_type = 'gaussian'):
     """
-    Run simulation for different growth parameters until the first layer forms
+    Run one simulation for different growth parameters until the first layer forms
     """
 
     params = {**base_params, 'g': float(g)}
@@ -37,6 +37,9 @@ def run_until_first_layer(g, base_params, T = 10000, method = 'LSODA', init_type
 
 def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = None, T = 10000,
                               method = 'LSODA', init_type = 'gaussian'):
+    """
+    Run multiple sensitivity analysis simulations for multiple parameter values
+    """
     if base_params is None:
         base_params = {}
     
@@ -63,6 +66,7 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
         ax_t.plot(g_values, t_events, marker = 'o', linestyle = '-', label = label)
         ax_h.plot(g_values, h_centers, marker = 'o', linestyle = '-', label = label)
 
+    # Set scales and label for the plots
     ax_t.set_xscale('log')
     ax_t.set_xlabel('g')
     ax_t.set_ylabel('t_event')
@@ -78,7 +82,8 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
     plt.show()
 
 if __name__ == '__main__':
-    g_values = [0.005, 0.01, 0.05, 0.1, 0.5, 1]
+    #g_values = [0.005, 0.01, 0.05, 0.1, 0.5, 1]
+    g_values = [0.05, 0.075, 0.1, 0.25]
     #epsilon_values = [0.5, 1, 2]
 
     growth_parameter_analysis(g_values=g_values, T = 20000)
