@@ -26,7 +26,7 @@ def plot_event_from_csv(csv_filename):
         t_event = group['t_event'].values
         h_center = group['h_center'].values
 
-        label = rf'$\epsilon = {eps}'
+        label = rf'$\epsilon = {eps}$'
         ax_t.plot(g, t_event, marker = 'o', linestyle = '-', label = label)
         ax_h.plot(g, h_center, marker = 'o', linestyle = '-', label = label)
 
