@@ -17,7 +17,7 @@ class FigureHandler:
             "xtick.labelsize": 14,
             "ytick.labelsize": 14,
             "legend.fontsize": 14,
-            "figure.dpi": 100 #change resolution, standard is 100
+            "figure.dpi": 300 #change resolution, standard is 100
         })
 
     def save_figure(self, filename: str):
@@ -27,12 +27,13 @@ class FigureHandler:
         plt.savefig(path, bbox_inches = 'tight')
         print(f"Saved figure: {path}")
 
-    def plot_binding_energy(self, g, h_min = 0, h_max = 10, nh = 1001, filename = None):
+    def plot_binding_energy(self, g, h_min = 0, h_max = 5, nh = 1001, filename = None):
         h_array = np.linspace(h_min, h_max, nh)
         plt.figure()
         plt.plot(h_array, g(h_array))
-        plt.xlabel('h')
-        plt.ylabel('f(h)')
+        plt.xlabel('h/$\sigma$')
+        plt.ylabel('f(h)/$\epsilon$')
+        plt.xlim(0, 5)
         plt.title('Binding potential')
         if filename:
             self.save_figure(filename)
