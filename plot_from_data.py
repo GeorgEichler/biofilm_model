@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def plot_event_from_csv(csv_filename):
+def plot_event_from_csv(csv_filename, filename_event_time = None, filename_height = None):
     """
     Load simulation data from CSV and generate plots of first reached layer
     """
@@ -22,6 +22,7 @@ def plot_event_from_csv(csv_filename):
     fig_h, ax_h = plt.subplots()
 
     for eps, group in df.groupby('epsilon'):
+        group = group.sort_values('g')
         g = group['g'].values
         t_event = group['t_event'].values
         h_center = group['h_center'].values
@@ -36,12 +37,18 @@ def plot_event_from_csv(csv_filename):
     ax_t.set_title('Time to first layer')
     ax_t.legend()
 
+    if filename_event_time:
+        fig_t.savefig(filename_event_time, dpi = 300, bbox_inches = 'tight')
+
     # Format height plot
     ax_h.set_xscale('log')
     ax_h.set_xlabel('g')
     ax_h.set_ylabel('h(t_event, L/2)')
-    ax_h.set_title('Height at middle of profile')
+    #ax_h.set_title('Height at middle of profile')
     ax_h.legend()
+
+    if filename_height:
+        fig_h.savefig(filename_height, dpi = 300, bbox_inches = 'tight')
 
     plt.show()    
 
@@ -56,5 +63,10 @@ if __name__ == "__main__":
             "figure.dpi": 100 #change resolution, standard is 100
         })
     
-    plot_event_from_csv("Results/data/first_layer_g_eps.csv")
+    filename_event_time = "Results/plots/event_time_long_range_g_eps.png"
+    filename_height = "Results/plots/height_long_range_g_eps.png"
+    
+    plot_event_from_csv("Results/data/first_layer_long_range_eps.csv",
+                        filename_event_time=filename_event_time,
+                        filename_height=filename_height)
     

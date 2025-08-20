@@ -109,8 +109,9 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
         # Correct the precursor height and use trapezoidal rule for integration 
         h_no_precursor = h[i0:i1] - self.h0
-        mean_h = np.trapezoid(h_no_precursor, x[i0:i1])/(x1-x0)
+        mean_h = np.trapz(h_no_precursor, x[i0:i1])/(x1-x0)
 
+        # Event occurs when mean height equal to the height of first layer
         return mean_h - (self.h1 - self.h0)
     
     # We need to tell the solver to stop when this event occurs.
@@ -172,22 +173,12 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
             print("Integration finished because the end time T was reached.")
 
         return sol.t, sol.y
-    
-    def calculate_contact_angles(self, h, h_contact_threshold = None):
-        """
-        Compute the contact andgle of a given height profile
-
-        Parameter:
-        h (np.ndarray): 1D array representing the height profile
-        h_contact_threshold (float): height at which to define contact line
-
-        Returns
-        """
 
 
 if __name__ == "__main__":
-    params = {'amplitude': 1.0, 'g': 0.1, 'epsilon': 5}
-    T = 500
+    
+    params = {'amplitude': 1.0, 'g': 5 * 10**(-3), 'epsilon': 0.5}
+    T = 1000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = np.linspace(0, T, 5)
 
@@ -201,10 +192,13 @@ if __name__ == "__main__":
         k_minima=5, 
         f = model.f
     )
+
+    filename = 'thin_film_g01'
     figure_handler = fh.FigureHandler(model)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = 'thin_film_g01')
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = None)
     #figure_handler.plot_growth(H.T, times)
-    #figure_handler.plot_binding_energy(model.f)
+    #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
+    #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")
     #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     #figure_handler.plot_free_energy(H, times)
 

@@ -26,7 +26,7 @@ def create_parameter_grid(parameter_values_dict):
     return param_sets
 
 def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
-                             const_params = {}, use_fft = False):
+                             const_params = {}, use_fft = False, savefig = False):
     """
     Performs a sensitivity analysis on a specified model parameter
 
@@ -87,8 +87,8 @@ def run_sensitivity_analysis(param_sets, T = 10, initial_condition = 'gaussian',
     plt.show()
 
 if __name__ == "__main__":
-    const_params = {'amplitude': 1.5}
-    param_values = {'g': [10**i for i in range(-2,1)]}
+    const_params = {'amplitude': 1.5, 'g': 0.01}
+    param_values = {'c': [1, 5, 10, 20]}
     param_sets = create_parameter_grid(param_values)
     run_sensitivity_analysis(
         param_sets=param_sets,
