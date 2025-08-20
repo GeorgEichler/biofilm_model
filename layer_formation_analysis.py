@@ -40,7 +40,7 @@ def run_until_first_layer(g, base_params, T = 10000, method = 'LSODA', init_type
 
 def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = None, T = 10000,
                               method = 'LSODA', init_type = 'gaussian',
-                              csv_filename = None):
+                              filename = None, csv_filename = None):
     """
     Run multiple sensitivity analysis simulations for multiple parameter values
     Save output to CSV and generate log-plots
@@ -105,6 +105,9 @@ def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = No
     ax_h.set_ylabel('h(t_event, L/2)')
     ax_h.set_title('Height at middle of profile')
     ax_h.legend()
+
+    if filename:
+        plt.savefig(filename, dpi = 300, bbox_inches = 'tight')
         
     plt.show()
 
@@ -124,8 +127,9 @@ if __name__ == '__main__':
     g_values = [0.025, 0.05, 0.075, 0.1, 0.25]
     epsilon_values = [1, 5]
 
-    filename = "Results/data/first_layer_g_eps.csv"
+    filename = "Results/plots/first_layer_g_eps.png"
+    csv_filename = "Results/data/first_layer_g_eps.csv"
 
     growth_parameter_analysis(g_values=g_values, epsilon_values=epsilon_values,
-                              T = 20000, csv_filename = filename)
+                              T = 20000, filename = filename, csv_filename = csv_filename)
 
