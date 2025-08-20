@@ -8,12 +8,11 @@ import itertools
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 
-def run_until_first_layer(g, base_params, T = 10000, method = 'LSODA', init_type = 'gaussian'):
+def run_until_first_layer(params, T = 10000, method = 'LSODA', init_type = 'gaussian'):
     """
     Run one simulation for different growth parameters until the first layer forms
     """
 
-    params = {**base_params, 'g': float(g)}
     model = FDM_OneD_Thin_Film_Model(**params)
 
     h0 = model.setup_initial_conditions(init_type)
@@ -70,9 +69,6 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
     param_values = list(sweep_params.values())
     param_combinations = list(itertools.product(*param_values))
     total_sims = len(param_combinations)
-    
-    _, ax_t = plt.subplots()
-    _, ax_h = plt.subplots()
 
     print(f"Starting parameter sweep with {total_sims} simulations...")
     start_time = time.time()
@@ -170,104 +166,16 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
         
     plt.show()
 
-
-def growth_parameter_analysis(g_values, epsilon_values = [1.0], base_params = None, T = 10000,
-                              method = 'LSODA', init_type = 'gaussian',
-                              plot_filename = None, csv_filename = None):
-    """
-    Run multiple sensitivity analysis simulations for multiple parameter values
-    Save output to CSV and generate log-plots
-    """
-    if base_params is None:
-        base_params = {}
-    
-    _, ax_t = plt.subplots()
-    _, ax_h = plt.subplots()
-
-    # list of dicts for each run
-    results = []
-
-    print("Begin simulation...")
-    start = time.time()
-
-    for ei, eps in enumerate(epsilon_values):
-        print(f'=== Epsilon {eps} ({ei+1}/{len(epsilon_values)}) ===')
-        params = {**base_params, 'epsilon': float(eps)}
-        
-        t_events = np.zeros_like(g_values, dtype = float)
-        h_centers = np.zeros_like(g_values, dtype = float)
-
-        for i, g in enumerate(g_values):
-            
-            start_single_simulation = time.time()
-            print(f'[{i+1}/{len(g_values)}] Running with g = {g:.6g}...')
-            t_event, h_center = run_until_first_layer(
-                g, params, T = T, method = method, init_type=init_type
-            )
-            t_events[i] = t_event
-            h_centers[i] = h_center
-
-            results.append({
-                'epsilon': eps,
-                'g': g,
-                't_event': t_event,
-                'h_center': h_center
-            })
-
-            if np.isnan(t_event):
-                print(f' -> Event NOT reached within T = {T}; recorded as NAN')
-
-            end_single_simulation = time.time()
-            print(f"Time for simulation step: {end_single_simulation - start_single_simulation:.3f}s.")
-        label = rf'$\epsilon = {eps}$'
-        ax_t.plot(g_values, t_events, marker = 'o', linestyle = '-', label = label)
-        ax_h.plot(g_values, h_centers, marker = 'o', linestyle = '-', label = label)
-
-
-    end = time.time()
-    print(f"Full simulation time: {end - start}s.")
-    # Set scales and label for the plots
-    ax_t.set_xscale('log')
-    ax_t.set_xlabel('g')
-    ax_t.set_ylabel('t_event')
-    ax_t.set_title('Time to first layer')
-    ax_t.legend()
-
-    ax_h.set_xscale('log')
-    ax_h.set_xlabel('g')
-    ax_h.set_ylabel('h(t_event, L/2)')
-    ax_h.set_title('Height at middle of profile')
-    ax_h.legend()
-
-    if plot_filename:
-        os.makedirs(os.path.dirname(plot_filename), exist_ok=True)
-        plt.savefig(plot_filename, dpi = 300, bbox_inches = 'tight')
-        
-    plt.show()
-
-    if csv_filename is not None:
-        os.makedirs("Results/data", exist_ok = True)
-
-        fieldnames = ['epsilon', 'g', 't_event', 'h_center']
-        with open(csv_filename, 'w', newline= '') as f:
-            writer = csv.DictWriter(f, fieldnames = fieldnames)
-            writer.writeheader()
-            writer.writerows(results)
-
-        print(f"\nSaved simulation results to: {csv_filename}")
-
 if __name__ == '__main__':
     sweep_params = {
-        'g': [5*10**(-3), 10**(-2), 5*10**(-2), 0.1, 0.5, 1],
+        'g': np.logspace(-3, 0, 11),
         'epsilon': [0.5, 1, 2]
     }
     
-    g_values = np.logspace(-3, 0, 5)
-    epsilon_values = [0.5, 1, 2]
 
     plot_filename = "Results/plots/first_layer_long_range_eps.png"
     csv_filename = "Results/data/first_layer_long_range_eps.csv"
 
-    growth_parameter_analysis(g_values=g_values, epsilon_values=epsilon_values,
+    growth_parameter_analysis(sweep_params=sweep_params,
                               T = 10000, plot_filename = plot_filename, csv_filename = csv_filename)
 
