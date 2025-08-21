@@ -148,8 +148,6 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
     def solve(self, h0, T = 10, method = 'LSODA', t_eval = None, event = False):
         start = time.time()
         print(f"Start integration using finite differences and {method} method in [0, {T}]...")
-        if t_eval is None:
-            t_eval = np.linspace(0, T, 5)
 
         rhs_to_use = SolveIVPProgressWrapper(self.rhs, T, report_step_percent=5)
         if event:
@@ -177,10 +175,10 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 5 * 10**(-3), 'epsilon': 0.5}
-    T = 1000
+    params = {'amplitude': 1.0, 'g': 10**(-1), 'epsilon': 1}
+    T = 500
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
-    t_eval = np.linspace(0, T, 5)
+    t_eval = np.linspace(0, T, 6)
 
     h_init = model.setup_initial_conditions('gaussian')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)
@@ -193,9 +191,9 @@ if __name__ == "__main__":
         f = model.f
     )
 
-    filename = 'thin_film_g01'
+    filename = 'thin_film_g10-1'
     figure_handler = fh.FigureHandler(model)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = None)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = filename)
     #figure_handler.plot_growth(H.T, times)
     #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
     #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")

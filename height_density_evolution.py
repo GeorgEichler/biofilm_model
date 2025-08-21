@@ -7,7 +7,7 @@ import itertools
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 
 
-def get_center_height_timeseries(params, T, t_eval, init_type = 'gaussian', method = 'LSODA'):
+def get_center_height_timeseries(params, T, init_type = 'gaussian', method = 'LSODA'):
     """
     Runs a single thin film evolution and returns the times series of the height
     at the center of the domain x = L/2
@@ -32,7 +32,7 @@ def get_center_height_timeseries(params, T, t_eval, init_type = 'gaussian', meth
 
     h_init = model.setup_initial_conditions(init_type)
 
-    times, H = model.solve(h_init, T = T, t_eval = t_eval, method = method)
+    times, H = model.solve(h_init, T = T, method = method)
 
     L = model.params['L']
     center_x = L/2
@@ -44,7 +44,7 @@ def get_center_height_timeseries(params, T, t_eval, init_type = 'gaussian', meth
     return times, h_center_series
 
 
-def plot_center_height_evolution(sweep_params, base_params = None, T = 1000, num_points = 101,
+def plot_center_height_evolution(sweep_params, base_params = None, T = 1000,
                                  plot_filename = None, csv_filename = None):
     """
     Perform a parameter sweep and plot the time evolution at the center height
@@ -63,16 +63,13 @@ def plot_center_height_evolution(sweep_params, base_params = None, T = 1000, num
     print(f"Starting sweep with {total_sims} simulations...")
     start_time = time.time()
 
-    # Define the time points for the output
-    t_eval = np.linspace(0, T, num_points)
-
     for i, combo in enumerate(param_combinations):
         current_sweep_params = dict(zip(param_keys, combo))
         full_params = {**base_params, **current_sweep_params}
 
 
         times, h_center_series = get_center_height_timeseries(
-            full_params, T, t_eval)
+            full_params, T)
 
 
         label = ", ".join([f"{k}={v:.3g}" for k, v in current_sweep_params.items()])
@@ -86,7 +83,6 @@ def plot_center_height_evolution(sweep_params, base_params = None, T = 1000, num
     ax.set_ylabel('Center Height h(L/2, t)')
     ax.set_title('Evolution of Center Height for Different Parameters')
     ax.legend(title="Parameters")
-    ax.grid(True, linestyle='--', alpha=0.6)
     
     if plot_filename:
         output_dir = os.path.dirname(plot_filename)
@@ -101,7 +97,7 @@ if __name__ == '__main__':
 
     sweep_params = {
         'g': [5e-3, 1e-2, 5e-2],
-        'epsilon': [0.5, 1]
+        'epsilon': [0.5, 1, 2]
     }
 
     plot_filename = "Results/plots/center_height_evolution.png"
