@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import time
 import itertools
 import os
+import csv
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 
@@ -91,7 +92,7 @@ def calculate_width_evolution(params, T = 1000, method = 'LSODA',
 
 def plot_widths(sweep_params, base_params = None, T = 1000,
                 method = 'LSODA', init_type = 'gaussian',
-                plot_filename = None):
+                plot_filename = None, csv_filename = None):
     """
     Simulation for calculating the width of the first layer of the biofilm
     """
@@ -108,6 +109,16 @@ def plot_widths(sweep_params, base_params = None, T = 1000,
     param_values = list(sweep_params.values())
     param_combinations = list(itertools.product(*param_values))
     total_sims = len(param_combinations)
+
+    if csv_filename:
+        output_dir = os.path.dirname(csv_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        fieldnames = [*param_keys, 'time', 'width']
+        with open(csv_filename,'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
 
     print(f"Starting parameter sweep with {total_sims} simulations...")
     start_time = time.time()
@@ -126,6 +137,15 @@ def plot_widths(sweep_params, base_params = None, T = 1000,
         )
         label = ", ".join([f"{k}={v:.3g}" for k, v in current_sweep_params.items()])
         ax.plot(times, widths, label = label)
+
+        if csv_filename:
+            with open(csv_filename, 'a', newline = '') as f:
+                writer = csv.DictWriter(f, fieldnames=[*param_keys, 'time', 'width'])
+                for t, w in zip(times, widths):
+                    row = {**{k: current_sweep_params[k] for k in param_keys},
+                           'time': float(t), 'width': float(w)}
+                    writer.writerow(row)
+
         sim_end_time = time.time()
         print(f" -> Time for this step: {sim_end_time - sim_start_time:.2f}s.")
 
@@ -151,16 +171,20 @@ def plot_widths(sweep_params, base_params = None, T = 1000,
 if __name__ == "__main__":
     base_params = {
         'L': 100,
-        'N': 1024
+        'N': 1024,
+        'g': 1
     }
     sweep_params = {
-        'g': [1e-2, 1e-1, 1]
+        'g': [1e-2]
     }
 
-    plot_filename = "Results/plots/width_evolution.png"
+    plot_filename = "Results/plots/width_evolution_g002.png"
+    csv_filename = "Results/data/width_evolution_g002.csv"
 
     plot_widths(
         sweep_params=sweep_params,
+        T = 2500,
         base_params=base_params,
-        plot_filename=plot_filename
+        plot_filename=plot_filename,
+        csv_filename=csv_filename
     )
