@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 
 
 def plot_event_from_csv(csv_filename, filename_event_time = None, filename_height = None):
@@ -52,6 +53,87 @@ def plot_event_from_csv(csv_filename, filename_event_time = None, filename_heigh
 
     plt.show()    
 
+def plot_width_from_csv(csv_filename,
+                        save_filename=None,
+                        logx=False,
+                        logy=False,
+                        xlim=None,
+                        ylim=None):
+    """
+    Load (time, width, <param columns...>) data from CSV and plot width vs time
+    for each parameter constellation.
+
+    Parameters
+    ----------
+    csv_filename : str
+        Path to the CSV produced by your sweep (columns: time, width, and params).
+    save_filename : str or None
+        If provided, save the figure here.
+    title : str
+        Plot title.
+    logx : bool
+        Use log scale on x-axis (time) if True.
+    xlim, ylim : tuple or None
+        Axis limits, e.g. (0, 2500).
+    """
+    df = pd.read_csv(csv_filename)
+    if df.empty:
+        print("CSV is empty – nothing to plot.")
+        return
+
+    # Make sure standard columns exist
+    required = {'time', 'width'}
+    if not required.issubset(df.columns):
+        raise ValueError(f"CSV must contain {required}, found {set(df.columns)}")
+
+    # Identify sweep parameter columns automatically
+    param_cols = [c for c in df.columns if c not in ('time', 'width')]
+    if not param_cols:
+        print("No sweep parameters detected; plotting a single curve.")
+        param_cols = []  # just one group
+
+    # Sort for clean lines
+    df = df.sort_values(['time'] + param_cols if param_cols else ['time'])
+
+    fig, ax = plt.subplots()
+
+    # Group by all parameter columns (or single group if none)
+    if param_cols:
+        grouped = df.groupby(param_cols, dropna=False)
+    else:
+        # single pseudo-group
+        grouped = [((), df)]
+
+    for key, group in grouped:
+        # key is either a tuple of param values aligned with param_cols or ()
+        label = ", ".join(f"{k}={v:g}" for k, v in zip(param_cols, key)) if param_cols else "run"
+        # Ensure time-sorted within group
+        group = group.sort_values('time')
+        ax.plot(group['time'].values, group['width'].values, label=label)
+
+    ax.set_xlabel('Time (t)')
+    ax.set_ylabel('Width (w)')
+    if logx:
+        ax.set_xscale('log')
+    if logy:
+        ax.set_yscale('log')
+    if xlim is not None:
+        ax.set_xlim(left=xlim[0],right=xlim[1])
+    if ylim is not None:
+        ax.set_ylim(*ylim)
+    if param_cols:
+        ax.legend()
+
+    fig.tight_layout()
+
+    if save_filename:
+        out_dir = os.path.dirname(save_filename)
+        if out_dir:
+            os.makedirs(out_dir, exist_ok=True)
+        fig.savefig(save_filename, dpi=300, bbox_inches='tight')
+        print(f"Saved plot to {save_filename}")
+
+    plt.show()
 
 if __name__ == "__main__":
     plt.rcParams.update({
@@ -62,7 +144,17 @@ if __name__ == "__main__":
             "legend.fontsize": 14,
             "figure.dpi": 100 #change resolution, standard is 100
         })
-    
+    csv_path = "Results/data/width_evolution_sweep.csv"
+
+    plot_width_from_csv(
+        csv_filename=csv_path,
+        save_filename="Results/plots/width_evolution.png",
+        logy=True,
+        xlim=[0, None],
+        ylim=[1,100]
+    )
+
+    exit()
     filename_event_time = "Results/plots/event_time_long_range_g_eps.png"
     filename_height = "Results/plots/height_long_range_g_eps.png"
     
