@@ -4,7 +4,7 @@ class SolveIVPProgressWrapper:
     """
     A wrapper to show the progress of the solve_ivp function
     """
-    def __init__(self, rhs_func, t_end, report_step_percent = 5):
+    def __init__(self, rhs_func, t_end, report_step_percent = 1):
         self.rhs_func = rhs_func
         self.t_end = float(t_end)
         self.report_step = report_step_percent
