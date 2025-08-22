@@ -83,7 +83,7 @@ class OneD_Base_Model(ABC):
     
     def growth_term(self, h):
         p = self.params
-        growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( (self.h0 - h) ))
+        #growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( (self.h0 - h) ))
 
         growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( 0.1 - h ))
 

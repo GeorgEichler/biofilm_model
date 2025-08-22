@@ -11,41 +11,41 @@ from numba import njit
 
 # Cannot use class methods or dictionaries for njitted functions
 @njit
-def _rhs_stencil_numba(h, dx, N, gamma, epsilon, g, h_max, h0, h_a, a, b, c, d, e, k):
+def _rhs_stencil_numba(h, dx, N, epsilon, g, h_max, h0, h_a, a, b, c, d, e, k):
     """RHS calculation using direct stencils, optimized with Numba."""
     
-    # Allocate arrays for intermediate results
-    h_xx = np.empty_like(h)
-    mu = np.empty_like(h)
     flux = np.empty_like(h)
-    
-    # --- Pi1 calculation (same as before) ---
-    exp_h_c = np.exp(-h / c)
-    cos_term = np.cos(h * k + b)
-    sin_term = np.sin(h * k + b)
-    pi1 = a * exp_h_c * (k * sin_term + 1/c * cos_term) + d/(e)*np.exp(-h/(e))
-
-    # --- Derivative calculations using stencils in a loop ---
     dx2 = dx * dx
 
+    # --- Main loop with stencil fusion ---
     for i in range(N):
-        # Periodic boundary conditions using modulo
-        i_plus_1 = (i + 1) % N
-        i_minus_1 = (i - 1 + N) % N
-        
-        # Second derivative of h
-        h_xx[i] = (h[i_plus_1] - 2 * h[i] + h[i_minus_1]) / dx2
-    
-    mu = -epsilon * pi1 - gamma * h_xx
-    
-        
-    for i in range(N):
-        i_plus_1 = (i + 1) % N
-        i_minus_1 = (i - 1 + N) % N
-        
-        # First derivative of mu_x (this is the flux term)
-        flux[i] = (mu[i_plus_1] - 2 * mu[i] + mu[i_minus_1]) / dx2
+        # Get indices for a 5-point stencil window (for the ∇⁴ operator)
+        i_p2 = (i + 2) % N
+        i_p1 = (i + 1) % N
+        i_m1 = (i - 1 + N) % N
+        i_m2 = (i - 2 + N) % N
 
+        # --- On-the-fly calculation of mu for points i-1, i, i+1 ---
+        
+        # mu at point i-1
+        h_xx_im1 = (h[i] - 2 * h[i_m1] + h[i_m2]) / dx2
+        pi_im1 = a * np.exp(-h[i_m1]/c) * (k * np.sin(h[i_m1]*k+b) + 1/c*np.cos(h[i_m1]*k+b)) + d/e*np.exp(-h[i_m1]/e)
+        mu_im1 = -epsilon * pi_im1 - h_xx_im1
+
+        # mu at point i
+        h_xx_i = (h[i_p1] - 2 * h[i] + h[i_m1]) / dx2
+        pi_i = a * np.exp(-h[i]/c) * (k * np.sin(h[i]*k+b) + 1/c*np.cos(h[i]*k+b)) + d/e*np.exp(-h[i]/e)
+        mu_i = -epsilon * pi_i - h_xx_i
+
+        # mu at point i+1
+        h_xx_ip1 = (h[i_p2] - 2 * h[i_p1] + h[i]) / dx2
+        pi_ip1 = a * np.exp(-h[i_p1]/c) * (k * np.sin(h[i_p1]*k+b) + 1/c*np.cos(h[i_p1]*k+b)) + d/e*np.exp(-h[i_p1]/e)
+        mu_ip1 = -epsilon * pi_ip1 - h_xx_ip1
+        
+        # --- Calculate flux at point i using the on-the-fly mu values ---
+        flux[i] = (mu_ip1 - 2 * mu_i + mu_im1) / dx2
+
+    # Source term is calculated in a separate loop as it's purely local
     source = np.empty_like(h)
     for i in range(N):
         hi = h[i]
@@ -125,12 +125,21 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
     def _rhs_scipy(self, t, h):
         """RHS for finite difference method using scipy matrices"""
+        p = self.params
+        a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
+        Pi_h = a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/e*np.exp(-h/e)
+
+        growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( (0.1 - h) ))
+
+
+        #flux = self.Laplacian @ (-p['epsilon'] * Pi_h - self.Laplacian @ h)
+
         h_xx = self.Laplacian @ h 
-        mu = - self.params['epsilon'] * self.Pi(h) - h_xx
+        mu = - self.params['epsilon'] * Pi_h - h_xx
         flux = self.Laplacian @ mu
         #mu_x = self.D @ mu
         #flux = self.D @ (h**3 * mu_x)
-        return flux + self.growth_term(h)
+        return flux + growth
 
 
     # Right hand side of PDE
@@ -138,7 +147,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         if self.use_numba:
             p = self.params
             # Numba function is called with parameters unpacked from the dict
-            return _rhs_stencil_numba(h, self.dx, p['N'], p['gamma'], p['epsilon'], 
+            return _rhs_stencil_numba(h, self.dx, p['N'], p['epsilon'], 
                                   p['g'], p['h_max'], self.h0, self.ha, p['a'], p['b'], 
                                   p['c'], p['d'], p['e'], p['k'])
         else:
@@ -149,7 +158,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         start = time.time()
         print(f"Start integration using finite differences and {method} method in [0, {T}]...")
 
-        rhs_to_use = SolveIVPProgressWrapper(self.rhs, T, report_step_percent=5)
+        rhs_to_use = SolveIVPProgressWrapper(self.rhs, T, report_step_percent=1)
         if event:
             sol = solve_ivp(
                 rhs_to_use,
@@ -175,10 +184,10 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 10**(-1), 'epsilon': 1}
-    T = 500
+    params = {'amplitude': 1.0, 'g': 10**(-2), 'L': 200, 'N': 2048}
+    T = 2500
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
-    t_eval = np.linspace(0, T, 6)
+    t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
 
     h_init = model.setup_initial_conditions('gaussian')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)
@@ -191,7 +200,7 @@ if __name__ == "__main__":
         f = model.f
     )
 
-    filename = 'thin_film_g10-1'
+    filename = 'thin_film_g10-2_many_steps_double_domain'
     figure_handler = fh.FigureHandler(model)
     figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = filename)
     #figure_handler.plot_growth(H.T, times)
