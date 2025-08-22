@@ -170,8 +170,8 @@ def plot_widths(sweep_params, base_params = None, T = 1000,
 
 if __name__ == "__main__":
     base_params = {
-        'L': 100,
-        'N': 1024,
+        'L': 200,
+        'N': 2048,
         'g': 1
     }
     sweep_params = {

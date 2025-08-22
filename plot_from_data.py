@@ -144,14 +144,13 @@ if __name__ == "__main__":
             "legend.fontsize": 14,
             "figure.dpi": 100 #change resolution, standard is 100
         })
-    csv_path = "Results/data/width_evolution_sweep.csv"
+    csv_path = "Results/data/width_evolution_g002.csv"
 
     plot_width_from_csv(
         csv_filename=csv_path,
-        save_filename="Results/plots/width_evolution.png",
-        logy=True,
-        xlim=[0, None],
-        ylim=[1,100]
+        save_filename="Results/plots/width_evolution_g002.png",
+        logx=False,
+        logy=False,
     )
 
     exit()

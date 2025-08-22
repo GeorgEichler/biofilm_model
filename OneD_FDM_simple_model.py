@@ -188,6 +188,7 @@ if __name__ == "__main__":
     T = 2500
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
+    #t_eval = np.linspace(0, T, 5)
 
     h_init = model.setup_initial_conditions('gaussian')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)
@@ -202,7 +203,7 @@ if __name__ == "__main__":
 
     filename = 'thin_film_g10-2_many_steps_double_domain'
     figure_handler = fh.FigureHandler(model)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = filename)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = None)
     #figure_handler.plot_growth(H.T, times)
     #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
     #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")
