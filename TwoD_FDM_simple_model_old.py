@@ -64,7 +64,7 @@ class TwoD_Thin_Film_Model:
         
         # Default values
         self.params = {
-            'Lx': 10, 'Ly': 10, 'Nx': 100, 'Ny': 100, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
+            'Lx': 10, 'Ly': 10, 'Nx': 64, 'Ny': 64, 'gamma': 0.5, 'h_max': 5, 'g': 0.1,
             'a': 0.1, 'b': np.pi/2, 'c': 1.0, 'd': 0.02, 'k': 2*np.pi,
             'amplitude': 2, 'var': 10
         }
