@@ -122,6 +122,16 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
     # This prevents it from triggering if the mean somehow starts above 1 and decreases.
     _event_mean_height_first_layer.direction = 1 # Trigger when event function goes from - to +
     
+    def _event_layer_transition(self, t, h):
+        """
+        Event function for solve_ivp triggers when the height of 2nd layer is reached
+        """
+
+        return np.max(h) - self.h2 
+    
+    _event_layer_transition.terminal = True
+
+    _event_layer_transition.direction = 1
 
     def _rhs_scipy(self, t, h):
         """RHS for finite difference method using scipy matrices"""
@@ -154,12 +164,12 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
             return self._rhs_scipy(t, h)
         
     # Good possible methods due to the stiffness are LSODA, BDF or Radau
-    def solve(self, h0, T = 10, method = 'LSODA', t_eval = None, event = False):
+    def solve(self, h0, T = 10, method = 'LSODA', t_eval = None, event = None):
         start = time.time()
         print(f"Start integration using finite differences and {method} method in [0, {T}]...")
 
         rhs_to_use = SolveIVPProgressWrapper(self.rhs, T, report_step_percent=1)
-        if event:
+        if event == 'mean_first:layer':
             sol = solve_ivp(
                 rhs_to_use,
                 [0, T], 
@@ -168,6 +178,15 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
                 method = method,
                 events=self._event_mean_height_first_layer
                 )
+        elif event == 'layer_transition':
+            sol = solve_ivp(
+                rhs_to_use,
+                [0, T],
+                h0,
+                t_eval = t_eval,
+                method = method,
+                event = self._event_layer_transition
+            )
         else:
             sol = solve_ivp(rhs_to_use, [0, T], h0, t_eval=t_eval, method = method)
         end = time.time()
@@ -184,11 +203,11 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 10**(-2), 'L': 200, 'N': 2048}
-    T = 2500
+    params = {'amplitude': 1.0, 'g': 10**(-2), 'L': 100, 'N': 1024, 'h_max': 5}
+    T = 100
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
-    t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
-    #t_eval = np.linspace(0, T, 5)
+    #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
+    t_eval = np.linspace(0, T, 5)
 
     h_init = model.setup_initial_conditions('gaussian')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)

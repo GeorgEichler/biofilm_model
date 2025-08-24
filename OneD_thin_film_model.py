@@ -35,9 +35,10 @@ class OneD_Base_Model(ABC):
         self._setup_numerical_operators()
 
         # Calculate equilibrium heights h0 and h1
-        minima, _ = find_first_k_minima(2, self.f)
+        minima, _ = find_first_k_minima(3, self.f)
         self.h0 = minima[0]
         self.h1 = minima[1]
+        self.h2 = minima[2]
         self.ha = p['ha'] # activation point
 
     @abstractmethod
