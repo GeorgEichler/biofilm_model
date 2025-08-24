@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 import os
 from OneD_thin_film_model import OneD_Base_Model
 class FigureHandler:
@@ -60,16 +62,26 @@ class FigureHandler:
             pot_minima (ndarray): list of minima of binding potential  
         """
         x = self.model.x # get grid of model
-        plt.figure()
+        fig, ax = plt.subplots()
+
+        # choose a colormap (e.g. viridis, plasma, cividis, inferno, etc.)
+        cmap = cm.viridis  
+        norm = mcolors.Normalize(vmin=min(times), vmax=max(times))
+
         for h, t in zip(H, times):
-            plt.plot(x, h, label=f't={t:.2f}')
+            color = cmap(norm(t))   # map time to color
+            ax.plot(x, h, label=f't={t:.2f}', color = color)
         if pot_minima is not None:
             for y in pot_minima:
-                plt.hlines(y, xmin=x[0], xmax=x[-1], linestyles='dashed')
-        plt.xlabel('x')
-        plt.ylabel('h(x,t)')
-        plt.legend(loc = 'right')
-        plt.grid(True)
+                ax.hlines(y, xmin=x[0], xmax=x[-1], linestyles='dashed', color = 'k')
+
+        sm = cm.ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax = ax)
+        cbar.set_label("t")
+        ax.set_xlabel('x')
+        ax.set_ylabel('h(x,t)')
+        #plt.legend(loc = 'right')
+        ax.grid(True)
         if filename:
             self.save_figure(filename)
 
