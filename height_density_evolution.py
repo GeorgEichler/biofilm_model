@@ -34,14 +34,10 @@ def get_center_height_timeseries(params, T, init_type = 'gaussian', method = 'LS
 
     times, H = model.solve(h_init, T = T, method = method)
 
-    L = model.params['L']
-    center_x = L/2
-    # find grid point closest to the center
-    center_idx = np.argmin(np.abs(model.x - center_x))
+    # get maximum value of series
+    h_max_series = np.max(H, axis=0)
 
-    h_center_series = H[center_idx, :]
-
-    return times, h_center_series
+    return times, h_max_series
 
 
 def plot_center_height_evolution(sweep_params, base_params = None, T = 1000,
@@ -80,9 +76,9 @@ def plot_center_height_evolution(sweep_params, base_params = None, T = 1000,
 
 
     ax.set_xlabel('Time (t)')
-    ax.set_ylabel('Center Height h(L/2, t)')
-    ax.set_title('Evolution of Center Height for Different Parameters')
-    ax.legend(title="Parameters")
+    ax.set_ylabel('$h_{max}(t)$')
+    #ax.set_title('Evolution of Center Height for Different Parameters')
+    ax.legend()
     
     if plot_filename:
         output_dir = os.path.dirname(plot_filename)
@@ -100,7 +96,7 @@ if __name__ == '__main__':
         'epsilon': [0.5, 1, 2]
     }
 
-    plot_filename = "Results/plots/center_height_evolution.png"
+    plot_filename = "Results/plots/max_height_evolution.png"
 
     plot_center_height_evolution(
         sweep_params=sweep_params,
