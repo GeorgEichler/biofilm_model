@@ -34,6 +34,7 @@ class FigureHandler:
         plt.xlabel('h')
         plt.ylabel('f(h)')
         plt.xlim(0, 5)
+        plt.ylim(-0.5, 2)
         #plt.title('Binding potential')
         if filename:
             self.save_figure(filename)
