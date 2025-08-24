@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 
 
-def plot_event_from_csv(csv_filename, filename_event_time = None, filename_height = None):
+def plot_first_layer_event_from_csv(csv_filename, filename_event_time = None, filename_height = None):
     """
     Load simulation data from CSV and generate plots of first reached layer
     """
@@ -43,7 +43,7 @@ def plot_event_from_csv(csv_filename, filename_event_time = None, filename_heigh
 
     # Format height plot
     ax_h.set_xscale('log')
-    ax_h.set_xlabel('g')
+    ax_h.set_xlabel('Growth parameter (g)')
     ax_h.set_ylabel('h(t_event, L/2)')
     #ax_h.set_title('Height at middle of profile')
     ax_h.legend()
@@ -52,6 +52,56 @@ def plot_event_from_csv(csv_filename, filename_event_time = None, filename_heigh
         fig_h.savefig(filename_height, dpi = 300, bbox_inches = 'tight')
 
     plt.show()    
+
+def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_params=None, plot_filename=None):
+    """
+    Recreate the plot of critical time vs growth parameter from saved CSV.
+    
+    Args:
+        csv_filename (str): Path to CSV file (must contain columns including `t_event`).
+        xaxis_param (str): Parameter to use on the x-axis (default: 'g').
+        series_params (list[str] | None): Parameters to separate into different series (default: infer from CSV).
+        plot_filename (str | None): If given, save plot to this file.
+    """
+    if not os.path.exists(csv_filename):
+        raise FileNotFoundError(f"No such file: {csv_filename}")
+
+    # Load CSV
+    df = pd.read_csv(csv_filename)
+    print(f"Loaded {len(df)} rows from {csv_filename}.")
+    print("Columns:", df.columns.tolist())
+
+    # If not given, infer series parameters from columns (exclude x and t_event)
+    if series_params is None:
+        series_params = [col for col in df.columns if col not in [xaxis_param, 't_event']]
+
+    _, ax = plt.subplots()
+
+    if series_params:
+        grouped = df.groupby(series_params)
+        for series_key, group in grouped:
+            group = group.sort_values(by=xaxis_param)
+            x_vals = group[xaxis_param].values
+            t_vals = group['t_event'].values
+            if not isinstance(series_key, tuple):
+                series_key = (series_key,)
+            label = ", ".join([f"{p}={v}" for p, v in zip(series_params, series_key)])
+            ax.plot(x_vals, t_vals, marker='o', linestyle='-', label=label)
+    else:
+        group = df.sort_values(by=xaxis_param)
+        ax.plot(group[xaxis_param], group['t_event'], marker='o', linestyle='-', label=None)
+
+    # match your style
+    ax.set_xscale('log')
+    ax.set_xlabel("Growth parameter (g)")
+    ax.set_ylabel('Critical time ($t_c$)')
+    ax.legend()
+
+    if plot_filename:
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Saved plot to {plot_filename}")
+
+    plt.show()
 
 def plot_width_from_csv(csv_filename,
                         save_filename=None,
@@ -135,6 +185,40 @@ def plot_width_from_csv(csv_filename,
 
     plt.show()
 
+def plot_widths_from_csv(csv_filename, plot_filename=None):
+    if not os.path.exists(csv_filename):
+        raise FileNotFoundError(f"No such file: {csv_filename}")
+
+    # Load CSV into dataframe
+    df = pd.read_csv(csv_filename)
+
+    # Quick sanity check
+    print(f"Loaded {len(df)} rows from {csv_filename}.")
+    print("Columns:", df.columns.tolist())
+
+    # Extract columns
+    times = df['t'].values
+    widths1 = df['First layer'].values
+    widths2 = df['Second layer'].values
+    widths3 = df['Third layer'].values
+
+    # Make the plot
+    fig, ax = plt.subplots()
+    ax.plot(times, widths1, label='1st layer')
+    ax.plot(times, widths2, label='2nd layer')
+    ax.plot(times, widths3, label='3rd layer')
+
+    ax.set_xlabel('Time (t)')
+    ax.set_ylabel('Width (w)')
+    ax.legend()
+    ax.grid(True)
+
+    if plot_filename:
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Plot saved to {plot_filename}")
+
+    plt.show()
+
 if __name__ == "__main__":
     plt.rcParams.update({
             "axes.titlesize": 18,
@@ -144,6 +228,12 @@ if __name__ == "__main__":
             "legend.fontsize": 14,
             "figure.dpi": 100 #change resolution, standard is 100
         })
+    
+    csv_path = "Results/data/new_layer_eps.csv"
+    plot_critical_time_event_from_csv(
+        csv_filename=csv_path
+    )
+    exit()
     csv_path = "Results/data/width_evolution_g002.csv"
 
     plot_width_from_csv(
@@ -153,11 +243,10 @@ if __name__ == "__main__":
         logy=False,
     )
 
-    exit()
     filename_event_time = "Results/plots/event_time_long_range_g_eps.png"
     filename_height = "Results/plots/height_long_range_g_eps.png"
     
-    plot_event_from_csv("Results/data/first_layer_long_range_eps.csv",
+    plot_first_layer_event_from_csv("Results/data/first_layer_long_range_eps.csv",
                         filename_event_time=filename_event_time,
                         filename_height=filename_height)
     
