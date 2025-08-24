@@ -253,8 +253,7 @@ class FDM_TwoD_ThinFilm_Model:
             [0, T],
             h0_vec,
             method = method,
-            t_eval = t_eval,
-            jac_sparsity=js
+            t_eval = t_eval
         )
         end = time.time()
         print(f"Integration finished in {end - start:.3f}s. Status={sol.status} (1=event, 0=end)")

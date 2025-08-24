@@ -153,7 +153,7 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
     ax_t.legend()
 
     ax_h.set_xscale('log')
-    ax_h.set_xlabel(xaxis_param)
+    ax_h.set_xlabel("Growth parameter (g)")
     ax_h.set_ylabel('h(t_event, L/2)')
     ax_h.set_title('Height at middle of profile')
     ax_h.legend()
@@ -168,12 +168,12 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
 
 if __name__ == '__main__':
     sweep_params = {
-        'g': np.logspace(-3, -2, 10),
+        'g': np.logspace(-2, -1, 10),
         'epsilon': [0.5, 1, 2]
     }
 
-    plot_filename = "Results/plots/first_layer_low_range_eps.png"
-    csv_filename = "Results/data/first_layer_low_range_eps.csv"
+    plot_filename = "Results/plots/first_layer_2nd_layer_eps.png"
+    csv_filename = "Results/data/first_layer_2nd_layer_eps.csv"
 
     growth_parameter_analysis(sweep_params=sweep_params,
                               T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)

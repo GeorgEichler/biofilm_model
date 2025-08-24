@@ -6,8 +6,9 @@ import os
 import csv
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
+from helper_functions import find_first_k_minima
 
-def calculate_width_at_center(h, x, h1, axis = 0):
+def calculate_width_at_center(h, x, h_low, axis = 0):
     """
     Calculates the width of interval containing the center where
     the film height surpasses the first layer
@@ -22,19 +23,19 @@ def calculate_width_at_center(h, x, h1, axis = 0):
         if x.shape[0] != N:
             raise ValueError("x and h must have the same length for 1D input.")
         center_idx = N // 2
-        if H[center_idx] < h1:
+        if H[center_idx] < h_low:
             return 0.0
         # expand to the right
         right_idx = center_idx
         for i in range(center_idx + 1, N):
-            if H[i] >= h1:
+            if H[i] >= h_low:
                 right_idx = i
             else:
                 break
         # expand to the left
         left_idx = center_idx
         for i in range(center_idx - 1, -1, -1):
-            if H[i] >= h1:
+            if H[i] >= h_low:
                 left_idx = i
             else:
                 break
@@ -53,7 +54,7 @@ def calculate_width_at_center(h, x, h1, axis = 0):
     center_idx = N // 2
     widths = np.zeros(M, dtype=float)
 
-    mask = H >= h1  # True where h >= threshold
+    mask = H >= h_low  # True where h >= threshold
 
     for j in range(M):
         if not mask[center_idx, j]:
@@ -80,6 +81,84 @@ def calculate_width_at_center(h, x, h1, axis = 0):
 
     return widths
 
+def calculate_3_width_evolution(params, T = 1000, method = 'LSODA', 
+                              init_type = 'gaussian'):
+    
+    model = FDM_OneD_Thin_Film_Model(**params)
+    h0 = model.setup_initial_conditions(init_type)
+    times, H = model.solve(h0, T = T, method = method)
+    minima, _ = find_first_k_minima(3, model.f)
+    h1, h2, h3 = minima
+    widths_1 = calculate_width_at_center(H, model.x, h1)
+    widths_2 = calculate_width_at_center(H, model.x, h2)
+    widths_3 = calculate_width_at_center(H, model.x, h3)
+
+    return times, widths_1, widths_2, widths_3
+
+def plot_multiple_widths(params, base_params = None, T = 1000,
+                         method = 'LSODA', init_type = 'gaussian',
+                         plot_filename = None, csv_filename = None):
+    """
+    Simulation for calculating the width of the 3 first layers simultaneously
+    """
+    if base_params is None:
+        base_params = {}
+
+
+    if csv_filename:
+        output_dir = os.path.dirname(csv_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        fieldnames = ['t', 'First layer', 'Second layer', 'Third layer']
+        with open(csv_filename,'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+
+    _, ax = plt.subplots()
+
+    print(f"Starting the simulation...")
+    start_time = time.time()
+    full_params = {**base_params, **params}
+    times, widths1, widths2, widths3 = calculate_3_width_evolution(
+        params=full_params,
+        T=T,
+        method=method,
+        init_type=init_type
+    )
+    
+    if csv_filename:
+        with open(csv_filename, 'a', newline = '') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            for t, w1, w2, w3 in zip(times, widths1, widths2, widths3):
+                writer.writerow({
+                    't': t,
+                    'First layer': w1,
+                    'Second layer': w2,
+                    'Third layer': w3
+                })
+            
+    end_time = time.time()
+    print(f"\nTotal simulation finished in {end_time - start_time:.2f}s.")
+
+    ax.plot(times, widths1, label = '1st layer')
+    ax.plot(times, widths2, label = '2nd layer')
+    ax.plot(times, widths3, label = '3rd layer')
+
+    ax.set_xlabel('Time (t)')
+    ax.set_ylabel('Width of biofilm')
+    #ax.set_title('Evolution of first layer')
+    ax.legend()
+    
+    if plot_filename:
+        output_dir = os.path.dirname(plot_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Plot saved to {plot_filename}")
+
+    plt.show()
+
 def calculate_width_evolution(params, T = 1000, method = 'LSODA', 
                               init_type = 'gaussian'):
     
@@ -87,6 +166,7 @@ def calculate_width_evolution(params, T = 1000, method = 'LSODA',
     h0 = model.setup_initial_conditions(init_type)
     times, H = model.solve(h0, T = T, method = method)
     widths = calculate_width_at_center(H, model.x, model.h1)
+
 
     return times, widths
 
@@ -155,8 +235,8 @@ def plot_widths(sweep_params, base_params = None, T = 1000,
 
     ax.set_xlabel('Time (t)')
     ax.set_ylabel('Width of biofilm')
-    ax.set_title('Evolution of first layer')
-    ax.legend(title="Parameters")
+    #ax.set_title('Evolution of first layer')
+    ax.legend()
     
     if plot_filename:
         output_dir = os.path.dirname(plot_filename)

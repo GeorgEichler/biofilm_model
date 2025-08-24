@@ -81,7 +81,7 @@ class FigureHandler:
         ax.set_xlabel('x')
         ax.set_ylabel('h(x,t)')
         #plt.legend(loc = 'right')
-        ax.grid(True)
+        #ax.grid(True)
         if filename:
             self.save_figure(filename)
 
