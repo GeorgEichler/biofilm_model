@@ -62,6 +62,9 @@ class OneD_Base_Model(ABC):
         
         if init_type == 'gaussian':
             h_init = (self.h0 + 0.01) + amplitude * np.exp(-(self.x - L/2)**2/var)
+        elif init_type == 'double gaussian':
+            x1 = 0.3 * L; x2 = 0.7 * L
+            h_init = (self.h0 + 0.01) + amplitude * np.exp(-(self.x - x1)**2/var) + amplitude * np.exp(-(self.x - x2)**2/var)
         elif init_type == 'constant':
             h_init = np.full_like(self.x, self.h0 + 0.5)
         elif init_type == 'cap':
