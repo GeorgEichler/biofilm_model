@@ -31,6 +31,11 @@ def run_until_new_layer(params, T = 10000, method = 'LSODA', init_type = 'gaussi
         return np.nan, np.nan
         
     t_event = float(sol.t_events[0][0])
+    h_event = sol.y_events[0][0]
+
+    # check case if just boundary has been reached
+    if h_event[0] > model.h1:
+        t_event = np.nan
 
     return t_event
 
@@ -85,6 +90,8 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
         )
         sim_end_time = time.time()
         print(f" -> Time for this step: {sim_end_time - sim_start_time:.2f}s.")
+        if np.isnan(t_event):
+            print("The biofilm is arrested, i.e. there is no critical time.")
 
         result_data = {**current_sweep_params, 't_event': t_event}
         results.append(result_data)
@@ -154,17 +161,13 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
 
 if __name__ == '__main__':
     sweep_params = {
-        'g': np.logspace(-2, -1, 10),
-        'epsilon': [0.5, 1, 2]
-    }
-
-    sweep_params = {
-        'g': [0.1, 1]
+        'g': np.logspace(-3, -2, 10),
+        'epsilon': [0.5]
     }
 
     plot_filename = "Results/plots/new_layer_eps.png"
     csv_filename = "Results/data/new_layer_eps.csv"
 
     growth_parameter_analysis(sweep_params=sweep_params,
-                              T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
+                              T = 50000, plot_filename = None, csv_filename = None)
 
