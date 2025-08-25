@@ -203,11 +203,11 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 10**(-2), 'L': 100, 'N': 1024, 'h_max': 5}
-    T = 100
+    params = {'amplitude': 1.0, 'g': 10**(-3), 'L': 100, 'N': 1024, 'epsilon': 0.5}
+    T = 20000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
-    t_eval = np.linspace(0, T, 5)
+    t_eval = np.linspace(0, T, 11)
 
     h_init = model.setup_initial_conditions('gaussian')
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)
