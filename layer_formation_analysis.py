@@ -39,7 +39,7 @@ def run_until_first_layer(params, T = 10000, method = 'LSODA', init_type = 'gaus
     return t_event, h_center
 
 
-def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
+def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
                               method = 'LSODA', init_type = 'gaussian',
                               plot_filename = None, csv_filename = None):
     """
@@ -58,8 +58,6 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
         plot_filename (str, optional): Path to save the plot image.
         csv_filename (str, optional): Path to save the results CSV file.
     """
-    if base_params is None:
-        base_params = {}
 
     param_keys = list(sweep_params.keys())
     if not param_keys:
@@ -166,15 +164,100 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
         
     plt.show()
 
+def phase_transition_analysis(params, base_params = {}, T = 10000,
+                              method = 'LSODA', init_type = 'gaussian',
+                              plot_filename = None, csv_filename = None):
+    """
+    Investigate the relationship between g and epsilon
+    when arrested spreading changes to swelling
+    """
+    eps_values = params['epsilon']
+    g_values = params['g']
+    # track the current g value
+    j = 0
+    # result list
+    result_g = []
+    results = []
+    start_time = time.time()
+
+    for eps in eps_values:
+
+        while j < len(g_values):
+            g = g_values[j]
+            # Update for next g value no matter what
+            j += 1
+            full_params = {**base_params, 'g': g, 'epsilon': eps}
+            print(f"Start simulation with values epsilon={eps} and g={g:.4g}...")
+            sim_start_time = time.time()
+            _, h_center = run_until_first_layer(full_params,
+                                                T=T, method=method, init_type=init_type)
+            sim_end_time = time.time()
+            print(f" -> Time for this step: {sim_end_time - sim_start_time:.2f}s.")
+            if h_center > 1.5:
+                print("Phase transition reached for epsilon={eps}.")
+                result_g.append(g)
+                result_data = {'g': g, 'epsilon': eps, 'h_center': h_center}
+                results.append(result_data)
+                break
+            print('No transition yet.')
+
+    end_time = time.time()
+    print(f"\nFull simulation time: {end_time - start_time:.2f}s.")
+
+    # Save results to CSV
+    if csv_filename and results:
+        # Create directory if it doesn't exist
+        output_dir = os.path.dirname(csv_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        fieldnames = list(results[0].keys())
+        with open(csv_filename, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(results)
+        print(f"Saved simulation results to: {csv_filename}")
+
+    plt.figure()
+    plt.plot(result_g, eps_values, marker='o', linestyle='-')
+    plt.xlabel("Growth parameter (g)")
+    plt.ylabel("Strength binding potential ($\epsilon$)")
+    plt.xscale('log')
+    
+    if plot_filename:
+        output_dir = os.path.dirname(plot_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        
+    plt.show()
+
 if __name__ == '__main__':
-    sweep_params = {
-        'g': np.logspace(-3, -2, 21),
-        'epsilon': [0.1, 0.2, 0.3]
-    }
+    # g = 0.0005 gives arrested for eps = 0.1
+    # use np.logspace(np.log10(0.005), 0)    
+    
+    choice = input("Growth parameter analysis (a) or phase transition (b)? ")
 
-    plot_filename = "Results/plots/first_layer_low_eps.png"
-    csv_filename = "Results/data/first_layer_low_eps.csv"
+    if choice == "a":
+        sweep_params = {
+            'g': np.logspace(-3, -1, 51),
+            'epsilon': [0.5, 1, 2]
+        }
 
-    growth_parameter_analysis(sweep_params=sweep_params,
-                              T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
+        plot_filename = "Results/plots/first_layer_many_steps_wider_interval.png"
+        csv_filename = "Results/data/first_layer_many_steps_wider_interval.csv"
+
+        growth_parameter_analysis(sweep_params=sweep_params,
+                                T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
+    elif choice == "b":
+        params = {
+            'g': [0.01, 0.1],
+            'epsilon': [0.5]
+        }
+
+        plot_filename = "Results/plots/phase_transition_g_eps.png"
+        csv_filename = "Results/data/phase_transition_g_eps.csv"
+
+        phase_transition_analysis(params=params,
+                                  T = 50000, plot_filename = None, csv_filename = None)
 
