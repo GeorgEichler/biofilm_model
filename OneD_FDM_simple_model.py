@@ -100,8 +100,8 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         x = self.x
         L = self.params['L']
         #set the boundaries of the interval [x0,x1] where the mean will be computed
-        x0 = 0.2*L
-        x1 = 0.8*L
+        x0 = 0.05*L
+        x1 = 0.95*L
 
         # Indices of the boundary interval points [x0, x1]
         i0 = np.searchsorted(x, x0, side = 'left')
@@ -203,8 +203,8 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 10**(-3), 'L': 100, 'N': 1024, 'epsilon': 0.5}
-    T = 20000
+    params = {'amplitude': 1.0, 'g': 0.0005, 'L': 100, 'N': 1024, 'epsilon': 0.1}
+    T = 50000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
     t_eval = np.linspace(0, T, 11)

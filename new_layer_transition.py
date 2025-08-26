@@ -40,7 +40,7 @@ def run_until_new_layer(params, T = 10000, method = 'LSODA', init_type = 'gaussi
     return t_event
 
 
-def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
+def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
                               method = 'LSODA', init_type = 'gaussian',
                               plot_filename = None, csv_filename = None):
     """
@@ -59,8 +59,6 @@ def growth_parameter_analysis(sweep_params, base_params = None, T = 10000,
         plot_filename (str, optional): Path to save the plot image.
         csv_filename (str, optional): Path to save the results CSV file.
     """
-    if base_params is None:
-        base_params = {}
 
     param_keys = list(sweep_params.keys())
     if not param_keys:
