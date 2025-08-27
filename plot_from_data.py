@@ -91,8 +91,8 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
         group = df.sort_values(by=xaxis_param)
         ax.plot(group[xaxis_param], group['t_event'], marker='o', linestyle='-', label=None)
 
-    # match your style
     ax.set_xscale('log')
+    #ax.set_yscale('log')
     ax.set_xlabel("Growth parameter (g)")
     ax.set_ylabel('Critical time ($t_c$)')
     ax.legend()
@@ -255,15 +255,16 @@ if __name__ == "__main__":
             "figure.dpi": 100 #change resolution, standard is 100
         })
     
-    csv_path = "Results/data/phase_transition_g_eps.csv"
-    plot_filename = "Results/data/phase_transition_eps_g_no_log.png"
-    plot_phase_transition(csv_filename = csv_path, plot_filename=plot_filename)
-    exit()
-
-    csv_path = "Results/data/new_layer_eps.csv"
+    csv_path = "Results/data/critical_time_eps.csv"
     plot_critical_time_event_from_csv(
         csv_filename=csv_path
     )
+    exit()
+
+    csv_path = "Results/data/phase_transition_g_eps.csv"
+    plot_filename = "Results/plots/phase_transition_eps_g_no_log.png"
+    plot_phase_transition(csv_filename = csv_path, plot_filename=plot_filename)
+
     csv_path = "Results/data/width_evolution_g002.csv"
 
     plot_width_from_csv(

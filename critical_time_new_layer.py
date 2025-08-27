@@ -36,6 +36,7 @@ def run_until_new_layer(params, T = 10000, method = 'LSODA', init_type = 'gaussi
     # check case if just boundary has been reached
     if h_event[0] > model.h1:
         t_event = np.nan
+        print("Second layer has not been emerged.")
 
     return t_event
 
@@ -160,11 +161,11 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
 if __name__ == '__main__':
     sweep_params = {
         'g': np.logspace(-2, 0, 21),
-        'epsilon': [0.5, 1, 2]
+        'epsilon': [0.5]
     }
 
     plot_filename = "Results/plots/critical_time_eps.png"
-    csv_filename = "Results/data/critical_timer_eps.csv"
+    csv_filename = "Results/data/critical_time_eps.csv"
 
     growth_parameter_analysis(sweep_params=sweep_params,
                               T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
