@@ -159,13 +159,13 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
 
 if __name__ == '__main__':
     sweep_params = {
-        'g': np.logspace(-3, -2, 10),
-        'epsilon': [0.5]
+        'g': np.logspace(-2, 0, 21),
+        'epsilon': [0.5, 1, 2]
     }
 
-    plot_filename = "Results/plots/new_layer_eps.png"
-    csv_filename = "Results/data/new_layer_eps.csv"
+    plot_filename = "Results/plots/critical_time_eps.png"
+    csv_filename = "Results/data/critical_timer_eps.csv"
 
     growth_parameter_analysis(sweep_params=sweep_params,
-                              T = 50000, plot_filename = None, csv_filename = None)
+                              T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
 

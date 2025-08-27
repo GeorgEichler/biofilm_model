@@ -251,8 +251,7 @@ def plot_widths(sweep_params, base_params = None, T = 1000,
 if __name__ == "__main__":
     base_params = {
         'L': 200,
-        'N': 2048,
-        'g': 1
+        'N': 2048
     }
     sweep_params = {
         'g': [1e-2]
@@ -263,7 +262,7 @@ if __name__ == "__main__":
 
     plot_widths(
         sweep_params=sweep_params,
-        T = 2500,
+        T = 10000,
         base_params=base_params,
         plot_filename=plot_filename,
         csv_filename=csv_filename

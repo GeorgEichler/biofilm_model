@@ -219,6 +219,32 @@ def plot_widths_from_csv(csv_filename, plot_filename=None):
 
     plt.show()
 
+def plot_phase_transition(csv_filename, plot_filename = None):
+    if not os.path.exists(csv_filename):
+        raise FileNotFoundError(f"No such file: {csv_filename}")
+    
+    df = pd.read_csv(csv_filename)
+    print(f"Loaded {len(df)} rows from {csv_filename}.")
+    print("Columns:", df.columns.tolist())
+
+    # Extract columns
+    g_values = df['g'].values
+    epsilon_values = df['epsilon'].values
+
+    plt.figure()
+    plt.plot(epsilon_values, g_values, marker = 'o', linestyle = '-')
+    plt.xlabel("Strength parameter ($\epsilon$)")
+    plt.ylabel("Growth parameter (g)")
+    #plt.yscale('log')
+
+    if plot_filename:
+        output_dir = os.path.dirname(plot_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok = True)
+        plt.savefig(plot_filename, dpi = 300, bbox_inches = 'tight')
+        print(f"Saved figure to: {plot_filename}")
+    plt.show()
+
 if __name__ == "__main__":
     plt.rcParams.update({
             "axes.titlesize": 18,
@@ -229,11 +255,15 @@ if __name__ == "__main__":
             "figure.dpi": 100 #change resolution, standard is 100
         })
     
+    csv_path = "Results/data/phase_transition_g_eps.csv"
+    plot_filename = "Results/data/phase_transition_eps_g_no_log.png"
+    plot_phase_transition(csv_filename = csv_path, plot_filename=plot_filename)
+    exit()
+
     csv_path = "Results/data/new_layer_eps.csv"
     plot_critical_time_event_from_csv(
         csv_filename=csv_path
     )
-    exit()
     csv_path = "Results/data/width_evolution_g002.csv"
 
     plot_width_from_csv(

@@ -146,9 +146,9 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
         h_xx = self.Laplacian @ h 
         mu = - self.params['epsilon'] * Pi_h - h_xx
-        flux = self.Laplacian @ mu
-        #mu_x = self.D @ mu
-        #flux = self.D @ (h**3 * mu_x)
+        #flux = self.Laplacian @ mu
+        mu_x = self.D @ mu
+        flux = self.D @ (h**3 * mu_x)
         return flux + growth
 
 
@@ -203,7 +203,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 0.0005, 'L': 100, 'N': 1024, 'epsilon': 0.1}
+    params = {'amplitude': 1.0, 'g': 0.001, 'L': 100, 'N': 1024, 'epsilon': 1}
     T = 50000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]

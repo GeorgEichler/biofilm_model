@@ -187,14 +187,14 @@ def phase_transition_analysis(params, base_params = {}, T = 10000,
             # Update for next g value no matter what
             j += 1
             full_params = {**base_params, 'g': g, 'epsilon': eps}
-            print(f"Start simulation with values epsilon={eps} and g={g:.4g}...")
+            print(f"Start simulation with values epsilon={eps:.4g} and g={g:.4g}...")
             sim_start_time = time.time()
             _, h_center = run_until_first_layer(full_params,
                                                 T=T, method=method, init_type=init_type)
             sim_end_time = time.time()
             print(f" -> Time for this step: {sim_end_time - sim_start_time:.2f}s.")
             if h_center > 1.5:
-                print("Phase transition reached for epsilon={eps}.")
+                print(f"Phase transition reached for epsilon={eps:.4g}.")
                 result_g.append(g)
                 result_data = {'g': g, 'epsilon': eps, 'h_center': h_center}
                 results.append(result_data)
@@ -229,13 +229,14 @@ def phase_transition_analysis(params, base_params = {}, T = 10000,
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Saved figure to: {plot_filename}")
         
     plt.show()
 
 if __name__ == '__main__':
     # g = 0.0005 gives arrested for eps = 0.1
-    # use np.logspace(np.log10(0.005), 0)    
-    
+    # use np.logspace(np.log10(0.0005), 0)    
+
     choice = input("Growth parameter analysis (a) or phase transition (b)? ")
 
     if choice == "a":
@@ -251,13 +252,13 @@ if __name__ == '__main__':
                                 T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
     elif choice == "b":
         params = {
-            'g': [0.01, 0.1],
-            'epsilon': [0.5]
+            'g': np.logspace(np.log10(0.0005), -1, 101),
+            'epsilon': [0.1*k for k in range(1, 21)]
         }
 
         plot_filename = "Results/plots/phase_transition_g_eps.png"
         csv_filename = "Results/data/phase_transition_g_eps.csv"
 
         phase_transition_analysis(params=params,
-                                  T = 50000, plot_filename = None, csv_filename = None)
+                                  T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
 
