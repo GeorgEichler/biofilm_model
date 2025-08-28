@@ -40,7 +40,7 @@ def get_center_height_timeseries(params, T, init_type = 'gaussian', method = 'LS
     return times, h_max_series
 
 
-def plot_center_height_evolution(sweep_params, base_params = None, T = 1000,
+def plot_max_height_evolution(sweep_params, base_params = None, T = 1000,
                                  plot_filename = None, csv_filename = None):
     """
     Perform a parameter sweep and plot the time evolution at the center height
@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
     plot_filename = "Results/plots/max_height_evolution.png"
 
-    plot_center_height_evolution(
+    plot_max_height_evolution(
         sweep_params=sweep_params,
         plot_filename=plot_filename
     )

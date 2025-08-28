@@ -253,7 +253,7 @@ if __name__ == '__main__':
     elif choice == "b":
         params = {
             'g': np.logspace(np.log10(0.0005), -1, 101),
-            'epsilon': [0.1*k for k in range(1, 21)]
+            'epsilon': [0.05*k for k in range(1, 41)]
         }
 
         plot_filename = "Results/plots/phase_transition_g_eps.png"

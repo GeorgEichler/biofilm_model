@@ -92,7 +92,7 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
         ax.plot(group[xaxis_param], group['t_event'], marker='o', linestyle='-', label=None)
 
     ax.set_xscale('log')
-    #ax.set_yscale('log')
+    ax.set_yscale('log')
     ax.set_xlabel("Growth parameter (g)")
     ax.set_ylabel('Critical time ($t_c$)')
     ax.legend()
