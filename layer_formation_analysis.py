@@ -41,6 +41,7 @@ def run_until_first_layer(params, T = 10000, method = 'LSODA', init_type = 'gaus
 
 def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
                               method = 'LSODA', init_type = 'gaussian',
+                              xlabel = "Growth parameter (g)",
                               plot_filename = None, csv_filename = None):
     """
     Run multiple sensitivity analysis simulations for multiple parameter values
@@ -151,7 +152,7 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
     ax_t.legend()
 
     ax_h.set_xscale('log')
-    ax_h.set_xlabel("Growth parameter (g)")
+    ax_h.set_xlabel(xlabel)
     ax_h.set_ylabel('h(t_event, L/2)')
     #ax_h.set_title('Height at middle of profile')
     ax_h.legend()
@@ -166,13 +167,21 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
 
 def phase_transition_analysis(params, base_params = {}, T = 10000,
                               method = 'LSODA', init_type = 'gaussian',
+                              xlabel = "Growth parameter (g)",
+                              parameter = 'epsilon',
                               plot_filename = None, csv_filename = None):
     """
     Investigate the relationship between g and epsilon
     when arrested spreading changes to swelling
     """
-    eps_values = params['epsilon']
+    if parameter == 'epsilon':
+        values = params['epsilon']
+    elif parameter == 'c':
+        values = params['c']
+    else:
+        print(f"There is no parameter option {parameter}!")
     g_values = params['g']
+
     # track the current g value
     j = 0
     # result list
@@ -180,23 +189,31 @@ def phase_transition_analysis(params, base_params = {}, T = 10000,
     results = []
     start_time = time.time()
 
-    for eps in eps_values:
+    for val in values:
 
         while j < len(g_values):
             g = g_values[j]
             # Update for next g value no matter what
             j += 1
-            full_params = {**base_params, 'g': g, 'epsilon': eps}
-            print(f"Start simulation with values epsilon={eps:.4g} and g={g:.4g}...")
+            if parameter == 'epsilon':
+                full_params = {**base_params, 'g': g, 'epsilon': val}
+                print(f"Start simulation with values epsilon={val:.4g} and g={g:.4g}...")
+            elif parameter == 'c':
+                full_params = {**base_params, 'g': g, 'epsilon': val}
+                print(f"Start simulation with values c={val:.4g} and g={g:.4g}...")
             sim_start_time = time.time()
             _, h_center = run_until_first_layer(full_params,
                                                 T=T, method=method, init_type=init_type)
             sim_end_time = time.time()
             print(f" -> Time for this step: {sim_end_time - sim_start_time:.2f}s.")
             if h_center > 1.5:
-                print(f"Phase transition reached for epsilon={eps:.4g}.")
+                if parameter == 'epsilon':
+                    print(f"Phase transition reached for epsilon={val:.4g}.")
+                    result_data = {'g': g, 'epsilon': val, 'h_center': h_center}
+                elif parameter == 'c':
+                    print(f"Phase transition reached for c={val:.4g}.")
+                    result_data = {'g': g, 'c': val, 'h_center': h_center}
                 result_g.append(g)
-                result_data = {'g': g, 'epsilon': eps, 'h_center': h_center}
                 results.append(result_data)
                 break
             print('No transition yet.')
@@ -219,9 +236,12 @@ def phase_transition_analysis(params, base_params = {}, T = 10000,
         print(f"Saved simulation results to: {csv_filename}")
 
     plt.figure()
-    plt.plot(result_g, eps_values, marker='o', linestyle='-')
-    plt.xlabel("Growth parameter (g)")
-    plt.ylabel("Strength binding potential ($\epsilon$)")
+    plt.plot(result_g, values, marker='o', linestyle='-')
+    plt.xlabel(xlabel)
+    if parameter == 'epsilon':
+        plt.ylabel("Strength binding potential ($\epsilon$)")
+    elif parameter == 'c':
+        plt.ylabel("Decay parameter (c)")
     plt.xscale('log')
     
     if plot_filename:
@@ -240,15 +260,16 @@ if __name__ == '__main__':
     choice = input("Growth parameter analysis (a) or phase transition (b)? ")
 
     if choice == "a":
+        base_params = {'epsilon': 0.5}
         sweep_params = {
-            'g': np.logspace(-3, -1, 51),
-            'epsilon': [0.5, 1, 2]
+            'g': np.logspace(-3, -1, 11),
+            'c': [1, 10, 100]
         }
 
-        plot_filename = "Results/plots/first_layer_many_steps_wider_interval.png"
-        csv_filename = "Results/data/first_layer_many_steps_wider_interval.csv"
+        plot_filename = "Results/plots/first_layer_oscillation_strength.png"
+        csv_filename = "Results/data/first_layer_ocillation_strength.csv"
 
-        growth_parameter_analysis(sweep_params=sweep_params,
+        growth_parameter_analysis(sweep_params=sweep_params, base_params=base_params,
                                 T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
     elif choice == "b":
         params = {
@@ -256,9 +277,16 @@ if __name__ == '__main__':
             'epsilon': [0.05*k for k in range(1, 41)]
         }
 
-        plot_filename = "Results/plots/phase_transition_g_eps.png"
-        csv_filename = "Results/data/phase_transition_g_eps.csv"
+        params_c = {
+            'g': np.logspace(-3, -1, 51),
+            'c': [k for k in range(1, 11)]
+        }
 
-        phase_transition_analysis(params=params,
+
+        plot_filename = "Results/plots/phase_transition_g_c.png"
+        csv_filename = "Results/data/phase_transition_g_c.csv"
+        parameter = 'c'
+
+        phase_transition_analysis(params=params_c, parameter = parameter,
                                   T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
 

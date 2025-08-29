@@ -255,29 +255,37 @@ if __name__ == "__main__":
             "figure.dpi": 100 #change resolution, standard is 100
         })
     
-    csv_path = "Results/data/critical_time_eps.csv"
-    plot_critical_time_event_from_csv(
-        csv_filename=csv_path
-    )
-    exit()
+    choice = input("Choose plot option: \n critical time (a), \nphase transition (b), \n" \
+    "width (c), \nnew layer emergence (d) ")
 
-    csv_path = "Results/data/phase_transition_g_eps.csv"
-    plot_filename = "Results/plots/phase_transition_eps_g_no_log.png"
-    plot_phase_transition(csv_filename = csv_path, plot_filename=plot_filename)
-
-    csv_path = "Results/data/width_evolution_g002.csv"
-
-    plot_width_from_csv(
-        csv_filename=csv_path,
-        save_filename="Results/plots/width_evolution_g002.png",
-        logx=False,
-        logy=False,
-    )
-
-    filename_event_time = "Results/plots/event_time_long_range_g_eps.png"
-    filename_height = "Results/plots/height_long_range_g_eps.png"
+    if choice == 'a':
+        csv_path = "Results/data/critical_time_eps.csv"
+        plot_critical_time_event_from_csv(
+            csv_filename=csv_path
+        )
     
-    plot_first_layer_event_from_csv("Results/data/first_layer_long_range_eps.csv",
-                        filename_event_time=filename_event_time,
-                        filename_height=filename_height)
+    elif choice == 'b':
+        csv_path = "Results/data/phase_transition_g_eps.csv"
+        plot_filename = "Results/plots/phase_transition_eps_g_no_log.png"
+        plot_phase_transition(csv_filename = csv_path, plot_filename=plot_filename)
+
+    elif choice == 'c':
+        csv_path = "Results/data/width_evolution_g002.csv"
+
+        plot_width_from_csv(
+            csv_filename=csv_path,
+            save_filename="Results/plots/width_evolution_g002.png",
+            logx=False,
+            logy=False,
+        )
+
+    elif choice == 'd':
+        filename_event_time = "Results/plots/event_time_long_range_g_eps.png"
+        filename_height = "Results/plots/height_long_range_g_eps.png"
+        
+        plot_first_layer_event_from_csv("Results/data/first_layer_long_range_eps.csv",
+                            filename_event_time=filename_event_time,
+                            filename_height=filename_height)
+    else:
+        print(f"There is no option {choice}!")
     
