@@ -53,7 +53,7 @@ class FigureHandler:
         if filename:
             self.save_figure(filename)
 
-    def plot_profiles(self, H, times, pot_minima = None, filename = None):
+    def plot_profiles(self, H, times, pot_minima = None, plot_filename = None):
         """
         Plot height profiles at different times
         Parameters:
@@ -62,6 +62,7 @@ class FigureHandler:
             pot_minima (ndarray): list of minima of binding potential  
         """
         x = self.model.x # get grid of model
+
         fig, ax = plt.subplots()
 
         # choose a colormap (e.g. viridis, plasma, cividis, inferno, etc.)
@@ -77,13 +78,16 @@ class FigureHandler:
 
         sm = cm.ScalarMappable(norm=norm, cmap=cmap)
         cbar = fig.colorbar(sm, ax = ax)
+        cbar.set_ticks(times)
+        cbar.set_ticklabels([f"{int(t)}" for t in times])
         cbar.set_label("t")
         ax.set_xlabel('x')
         ax.set_ylabel('h(x,t)')
+        #ax.set_xlim(30, 70)
         #plt.legend(loc = 'right')
         #ax.grid(True)
-        if filename:
-            self.save_figure(filename)
+        if plot_filename:
+            self.save_figure(plot_filename)
 
     def plot_growth(self, H, times, filename = None):
         x = self.model.x

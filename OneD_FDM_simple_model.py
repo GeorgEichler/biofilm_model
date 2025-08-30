@@ -203,26 +203,31 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 0.001, 'L': 200, 'N': 2048, 'epsilon': 1}
-    T = 20000
+    params = {'amplitude': 1.0, 'g': 10**(-2), 'L': 100, 'N': 1024, 'epsilon': 1}
+    T = 2000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
-    t_eval = np.linspace(0, T, 11)
+    t_eval = np.linspace(0, T, 6)
 
     h_init = model.setup_initial_conditions('gaussian')
+    print(f"Baseline h_b ={model.h0 + 0.01}")
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)
-
-    model.save_profile_values(times, H, "Results/values/thinfilm_profiles.npz")
-
+    
+    #h_final = H[:, -1]
+    #model.params['g'] = 0
+    #times, H = model.solve(h_final, T, t_eval = t_eval)    
     
     h_mins, g1_mins = find_first_k_minima(
         k_minima=5, 
         f = model.f
     )
 
-    filename = 'thin_film_g10-2_many_steps_double_domain'
+    plot_filename = 'thin_film_g10-2_multilayer_regime'
+    save_filename = "Results/values/thin_film_g10-2_multilayer_regime.npz"
+
     figure_handler = fh.FigureHandler(model)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, filename = None)
+    model.save_profile_values(times, H, save_filename)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = plot_filename)
     #figure_handler.plot_growth(H.T, times)
     #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
     #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")
