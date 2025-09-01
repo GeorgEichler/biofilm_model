@@ -139,7 +139,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
         Pi_h = a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/e*np.exp(-h/e)
 
-        growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( (0.1 - h) ))
+        growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( (p['hf'] - h) ))
 
 
         #flux = self.Laplacian @ (-p['epsilon'] * Pi_h - self.Laplacian @ h)
@@ -203,7 +203,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 10**(-2), 'L': 100, 'N': 1024, 'epsilon': 1}
+    params = {'amplitude': 2.0, 'g': 10**(-2), 'L': 100, 'N': 1024, 'epsilon': 0, 'hf': 0.1}
     T = 2000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     figure_handler = fh.FigureHandler(model)
     model.save_profile_values(times, H, save_filename)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = plot_filename)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = None)
     #figure_handler.plot_growth(H.T, times)
     #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
     #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")

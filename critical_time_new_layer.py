@@ -155,17 +155,18 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Saved plot to: {plot_filename}")
         
     plt.show()
 
 if __name__ == '__main__':
     sweep_params = {
-        'g': np.logspace(-2, 0, 21),
-        'epsilon': [0.5]
+        'g': np.logspace(-2, 0, 51),
+        'epsilon': [0]
     }
 
-    plot_filename = "Results/plots/critical_time_eps.png"
-    csv_filename = "Results/data/critical_time_eps.csv"
+    plot_filename = "Results/plots/critical_time_eps0.png"
+    csv_filename = "Results/data/critical_time_eps0.csv"
 
     growth_parameter_analysis(sweep_params=sweep_params,
                               T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)

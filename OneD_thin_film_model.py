@@ -22,7 +22,7 @@ class OneD_Base_Model(ABC):
         """
         # Default values
         self.params = {
-            'L': 100, 'N': 1024, 'gamma': 1, 'g': 0.1, 'ha': 0.8, 'h_max': 5, 'Q': 1.0, 'epsilon': 1.0,
+            'L': 100, 'N': 1024, 'gamma': 1, 'g': 0.1, 'ha': 0.8, 'hf': 0.1, 'h_max': 5, 'Q': 1.0, 'epsilon': 1.0,
             'a': 0.5, 'b': np.pi, 'c': 1.0, 'd': 10, 'e': 0.01, 'k': 2*np.pi,
             'amplitude': 1.0, 'var': 10, 'dt': 0.1
         }
@@ -89,7 +89,7 @@ class OneD_Base_Model(ABC):
         p = self.params
         #growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( (self.h0 - h) ))
 
-        growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( 0.1 - h ))
+        growth = p['g'] * (h - self.ha) * (1 - h/p['h_max']) * (1 - np.exp( p['hf'] - h ))
 
         #growth = np.maximum(growth, 0) # alternative growth term with truncated growth
 
