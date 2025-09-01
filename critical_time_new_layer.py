@@ -8,6 +8,17 @@ import itertools
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 
+def compute_layer_width(x, h, h_thr):
+    above = (h >= h_thr)
+
+    if not(np.any(above)):
+        return np.nan, np.nan, np.nan
+    
+    i_left = np.argmax(above)
+    i_right = len(above) - 1 - np.argmax(above[::-1])
+
+    return float(x[i_right] - x[i_left])
+
 def run_until_new_layer(params, T = 10000, method = 'LSODA', init_type = 'gaussian'):
     """
     Run one simulation for different growth parameters until the first layer forms
@@ -36,14 +47,20 @@ def run_until_new_layer(params, T = 10000, method = 'LSODA', init_type = 'gaussi
     # check case if just boundary has been reached
     if h_event[0] > model.h1:
         t_event = np.nan
+        critical_width = np.nan
         print("Second layer has not been emerged.")
+    else:
+        # compute critical width
+        x = model.x
+        critical_width = compute_layer_width(x, h_event, model.h1)
 
-    return t_event
+    return t_event, critical_width
 
 
 def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
                               method = 'LSODA', init_type = 'gaussian',
-                              plot_filename = None, csv_filename = None):
+                              plot_filename = None, csv_filename = None,
+                              plot_filename_critical_width = None):
     """
     Run multiple sensitivity analysis simulations for multiple parameter values
     Save output to CSV and generate log-plots
@@ -84,7 +101,7 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
         
         sim_start_time = time.time()
 
-        t_event = run_until_new_layer(
+        t_event, critical_width = run_until_new_layer(
             full_params, T=T, method=method, init_type=init_type
         )
         sim_end_time = time.time()
@@ -92,7 +109,7 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
         if np.isnan(t_event):
             print("The biofilm is arrested, i.e. there is no critical time.")
 
-        result_data = {**current_sweep_params, 't_event': t_event}
+        result_data = {**current_sweep_params, 't_event': t_event, 'critical_width': critical_width}
         results.append(result_data)
 
     end_time = time.time()
@@ -156,18 +173,61 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
             os.makedirs(output_dir, exist_ok=True)
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
         print(f"Saved plot to: {plot_filename}")
+    
+
+    _, ax_w = plt.subplots()
+
+    # Group results by the series parameters to plot separate lines
+    if series_params:
+        grouped_results = {}
+        for res in results:
+            # Create a unique key for each combination of series parameter values
+            series_key = tuple(res[k] for k in series_params)
+            if series_key not in grouped_results:
+                grouped_results[series_key] = []
+            grouped_results[series_key].append(res)
         
+        for series_key, series_data in grouped_results.items():
+            series_data.sort(key=lambda r: r[xaxis_param])
+            x_vals = [r[xaxis_param] for r in series_data]
+            w_vals = [r['critical_width'] for r in series_data]
+            
+            # Create a descriptive label, e.g., "epsilon=0.5, A=0.1"
+            label = ", ".join([f"{key}={val}" for key, val in zip(series_params, series_key)])
+            ax_w.plot(x_vals, w_vals, marker='o', linestyle='-', label=label)
+    else:
+        # If no series parameters, plot all data as a single line
+        results.sort(key=lambda r: r[xaxis_param])
+        x_vals = [r[xaxis_param] for r in results]
+        w_vals = [r['critical_width'] for r in results]
+        ax_w.plot(x_vals, w_vals, marker='o', linestyle='-')
+
+    # Set scales and labels for the plots
+    ax_w.set_xscale('log')
+    ax_w.set_xlabel("Growth parameter (g)")
+    ax_w.set_ylabel('Critical width ($t_w$)')
+    #ax_t.set_title('Time to second layer')
+    ax_w.legend()
+
+
+    if plot_filename_critical_width:
+        output_dir = os.path.dirname(plot_filename_critical_width)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Saved plot to: {plot_filename}")
+
     plt.show()
 
 if __name__ == '__main__':
     sweep_params = {
-        'g': np.logspace(-2, 0, 51),
-        'epsilon': [0]
+        'g': np.logspace(-2, 0, 6),
+        'epsilon': [2]
     }
 
-    plot_filename = "Results/plots/critical_time_eps0.png"
-    csv_filename = "Results/data/critical_time_eps0.csv"
+    plot_filename = "Results/plots/critical_time_eps05.png"
+    csv_filename = "Results/data/critical_time_eps05.csv"
 
     growth_parameter_analysis(sweep_params=sweep_params,
-                              T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
+                              T = 50000, plot_filename = None, csv_filename = None)
 

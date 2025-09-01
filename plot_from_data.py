@@ -1,6 +1,8 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import os
+from scipy.stats import linregress
 
 
 def plot_first_layer_event_from_csv(csv_filename, filename_event_time = None, filename_height = None):
@@ -53,7 +55,8 @@ def plot_first_layer_event_from_csv(csv_filename, filename_event_time = None, fi
 
     plt.show()    
 
-def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_params=None, plot_filename=None):
+def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_params=None, plot_filename=None,
+                                      loglog = False):
     """
     Recreate the plot of critical time vs growth parameter from saved CSV.
     
@@ -73,7 +76,7 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
 
     # If not given, infer series parameters from columns (exclude x and t_event)
     if series_params is None:
-        series_params = [col for col in df.columns if col not in [xaxis_param, 't_event']]
+        series_params = [col for col in df.columns if col not in [xaxis_param, 't_event', 'critical_width']]
 
     _, ax = plt.subplots()
 
@@ -85,14 +88,31 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
             t_vals = group['t_event'].values
             if not isinstance(series_key, tuple):
                 series_key = (series_key,)
+            if loglog:
+                # Regression line
+                x_data = np.log(x_vals)
+                y_data = np.log(t_vals)
+                # treat case of eps = 2 separate
+                if series_key[0] == 2:
+                    x_data = x_data[2:]
+                    y_data = y_data[2:]
+                slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
+                A = np.exp(intercept)
+                B = slope
+                print(f"Power law fit: g(ε) = {A:.4f} * g^{B:.4f} (R² = {r_value**2:.4f})")
+                x_fit = np.linspace(min(x_vals), max(x_vals))
+                y_fit = A * x_fit**B
+                ax.plot(x_fit, y_fit, 'r--')
             label = ", ".join([f"{p}={v}" for p, v in zip(series_params, series_key)])
             ax.plot(x_vals, t_vals, marker='o', linestyle='-', label=label)
     else:
         group = df.sort_values(by=xaxis_param)
         ax.plot(group[xaxis_param], group['t_event'], marker='o', linestyle='-', label=None)
 
-    ax.set_xscale('log')
-    ax.set_yscale('log')
+    
+    if loglog:
+        ax.set_xscale('log')
+        ax.set_yscale('log')
     ax.set_xlabel("Growth parameter (g)")
     ax.set_ylabel('Critical time ($t_c$)')
     ax.legend()
@@ -219,7 +239,7 @@ def plot_widths_from_csv(csv_filename, plot_filename=None):
 
     plt.show()
 
-def plot_phase_transition(csv_filename, plot_filename = None):
+def plot_phase_transition(csv_filename, plot_filename = None, loglog = False):
     if not os.path.exists(csv_filename):
         raise FileNotFoundError(f"No such file: {csv_filename}")
     
@@ -231,11 +251,27 @@ def plot_phase_transition(csv_filename, plot_filename = None):
     g_values = df['g'].values
     epsilon_values = df['epsilon'].values
 
+    if loglog:
+        x_data = np.log(epsilon_values[:20:])
+        y_data = np.log(g_values[:20])
+        # fit linear regression
+        slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
+        A = np.exp(intercept)
+        B = slope
+        print(f"Power law fit: g(ε) = {A:.4f} * ε^{B:.4f} (R² = {r_value**2:.4f})")
+        x_fit = np.linspace(0, max(epsilon_values), 201)
+        y_fit = A * x_fit**B
+
+
     plt.figure()
     plt.plot(epsilon_values, g_values, marker = 'o', linestyle = '-')
     plt.xlabel("Strength parameter ($\epsilon$)")
-    plt.ylabel("Growth parameter (g)")
-    #plt.yscale('log')
+    plt.ylabel("Critical growth rate ($g_c(\epsilon)$)")
+    plt.xlim(left = 0)
+    #plt.xscale('log')
+    #plt.yscale('log)
+    if loglog:
+        plt.plot(x_fit, y_fit, 'r--')
 
     if plot_filename:
         output_dir = os.path.dirname(plot_filename)
@@ -261,13 +297,14 @@ if __name__ == "__main__":
     if choice == 'a':
         csv_path = "Results/data/critical_time_eps.csv"
         plot_critical_time_event_from_csv(
-            csv_filename=csv_path
+            csv_filename=csv_path,
+            loglog=False
         )
     
     elif choice == 'b':
         csv_path = "Results/data/phase_transition_g_eps.csv"
-        plot_filename = "Results/plots/phase_transition_eps_g_no_log.png"
-        plot_phase_transition(csv_filename = csv_path, plot_filename=plot_filename)
+        plot_filename = "Results/plots/phase_transition_eps_g_fit.png"
+        plot_phase_transition(csv_filename = csv_path, plot_filename=plot_filename, loglog = True)
 
     elif choice == 'c':
         csv_path = "Results/data/width_evolution_g002.csv"
