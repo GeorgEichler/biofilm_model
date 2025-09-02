@@ -76,13 +76,14 @@ class FigureHandler:
 
         df = pd.DataFrame(results)
 
-        sns.set_theme(style = "whitegrid")
-        sns.color_palette(palette = "crest", as_cmap=True)
+        sns.set_theme(style = "white")
+        cmap = sns.color_palette(palette = "crest", as_cmap=True)
         fig, ax = plt.subplots()
         sns.lineplot(
             data=df,
             x="x", y = "h", hue = "t",
-            ax = ax, legend = True
+            palette=cmap, hue_norm=(times.min(), times.max()),
+            ax = ax, legend = False
         )
 
         if pot_minima is not None:
@@ -90,9 +91,18 @@ class FigureHandler:
                 ax.hlines(y, xmin=x[0], xmax=x[-1], linestyles='dashed', color = 'k')
 
         
+        norm = plt.Normalize(times.min(), times.max())
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm = norm)
+        sm.set_array([])
+        cbar = fig.colorbar(sm, ax = ax)
+        cbar.set_ticks(times)
+        cbar.set_ticklabels([f"{int(t)}" for t in times])
+        cbar.set_label("t")
         ax.set_xlabel('x')
         ax.set_ylabel('h(x,t)')
         #ax.set_xlim(30, 70)
+        ax.set_xlim(0, self.model.params['L'])
+        ax.set_ylim(bottom = 0)
         #plt.legend(loc = 'right')
         #ax.grid(True)
         if plot_filename:
