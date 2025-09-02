@@ -313,7 +313,7 @@ if __name__ == "__main__":
         plot_critical_time_event_from_csv(
             csv_filename=csv_path,
             plot_filename=None,
-            loglog=True, fit=True
+            loglog=False, fit=False
         )
     
     elif choice == 'b':

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
+import pandas as pd
+import seaborn as sns
 import os
 from OneD_thin_film_model import OneD_Base_Model
 class FigureHandler:
@@ -63,24 +63,33 @@ class FigureHandler:
         """
         x = self.model.x # get grid of model
 
+        results = []
+        for t, h in zip(times, H):
+            for xi, hi in zip(x, h):
+                results.append(
+                    {
+                        "t": t,
+                        "h": hi,
+                        "x": xi
+                    }
+                )
+
+        df = pd.DataFrame(results)
+
+        sns.set_theme(style = "whitegrid")
+        sns.color_palette(palette = "crest", as_cmap=True)
         fig, ax = plt.subplots()
+        sns.lineplot(
+            data=df,
+            x="x", y = "h", hue = "t",
+            ax = ax, legend = True
+        )
 
-        # choose a colormap (e.g. viridis, plasma, cividis, inferno, etc.)
-        cmap = cm.viridis  
-        norm = mcolors.Normalize(vmin=min(times), vmax=max(times))
-
-        for h, t in zip(H, times):
-            color = cmap(norm(t))   # map time to color
-            ax.plot(x, h, label=f't={t:.2f}', color = color)
         if pot_minima is not None:
             for y in pot_minima:
                 ax.hlines(y, xmin=x[0], xmax=x[-1], linestyles='dashed', color = 'k')
 
-        sm = cm.ScalarMappable(norm=norm, cmap=cmap)
-        cbar = fig.colorbar(sm, ax = ax)
-        cbar.set_ticks(times)
-        cbar.set_ticklabels([f"{int(t)}" for t in times])
-        cbar.set_label("t")
+        
         ax.set_xlabel('x')
         ax.set_ylabel('h(x,t)')
         #ax.set_xlim(30, 70)
