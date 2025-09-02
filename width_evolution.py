@@ -254,15 +254,15 @@ if __name__ == "__main__":
         'N': 2048
     }
     sweep_params = {
-        'g': [1e-2]
+        'g': [1e-2,1e-1,1]
     }
 
-    plot_filename = "Results/plots/width_evolution_g002.png"
-    csv_filename = "Results/data/width_evolution_g002.csv"
+    plot_filename = "Results/plots/width_evolution_g.png"
+    csv_filename = "Results/data/width_evolution_g.csv"
 
     plot_widths(
         sweep_params=sweep_params,
-        T = 10000,
+        T = 2000,
         base_params=base_params,
         plot_filename=plot_filename,
         csv_filename=csv_filename

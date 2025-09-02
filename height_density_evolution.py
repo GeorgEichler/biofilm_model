@@ -91,14 +91,19 @@ def plot_max_height_evolution(sweep_params, base_params = None, T = 1000,
     
 if __name__ == '__main__':
 
+    base_params = {
+        'L': 200,
+        'N': 2048
+    }
     sweep_params = {
-        'g': [5e-3, 1e-2, 5e-2],
-        'epsilon': [0.5, 1, 2]
+        'g': [1e-2, 1e-1, 1]
     }
 
     plot_filename = "Results/plots/max_height_evolution.png"
 
     plot_max_height_evolution(
+        T = 2000,
+        base_params=base_params,
         sweep_params=sweep_params,
         plot_filename=plot_filename
     )
