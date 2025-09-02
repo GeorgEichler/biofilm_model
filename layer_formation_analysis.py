@@ -273,11 +273,9 @@ if __name__ == '__main__':
                                 T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
     elif choice == "b":
         params = {
-            'g': np.logspace(np.log10(0.0005), -1, 101),
+            'g': np.logspace(np.log10(0.0005), -1, 201),
             'epsilon': [0.05*k for k in range(1, 41)]
         }
-        print(np.logspace(np.log10(0.0005), -1, 101))
-        exit()
         params_c = {
             'g': np.logspace(-3, -1, 51),
             'c': [k for k in range(1, 11)]
@@ -288,6 +286,6 @@ if __name__ == '__main__':
         csv_filename = "Results/data/phase_transition_g_eps.csv"
         parameter = 'epsilon'
 
-        phase_transition_analysis(params=params_c, parameter = parameter,
+        phase_transition_analysis(params=params, parameter = parameter,
                                   T = 50000, plot_filename = plot_filename, csv_filename = csv_filename)
 

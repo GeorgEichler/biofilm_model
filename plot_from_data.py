@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import os
 from scipy.stats import linregress
 
@@ -56,7 +57,7 @@ def plot_first_layer_event_from_csv(csv_filename, filename_event_time = None, fi
     plt.show()    
 
 def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_params=None, plot_filename=None,
-                                      loglog = False):
+                                      loglog = False, fit = False):
     """
     Recreate the plot of critical time vs growth parameter from saved CSV.
     
@@ -83,12 +84,16 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
     if series_params:
         grouped = df.groupby(series_params)
         for series_key, group in grouped:
+            opacity = 1
+            #if series_key[0] == 0.5 or series_key[0] == 2: continue
             group = group.sort_values(by=xaxis_param)
             x_vals = group[xaxis_param].values
             t_vals = group['t_event'].values
             if not isinstance(series_key, tuple):
                 series_key = (series_key,)
-            if loglog:
+            label = ", ".join([f"{p}={v}" for p, v in zip(series_params, series_key)])
+            ax.plot(x_vals, t_vals, marker='o', linestyle='-', label=label, alpha = opacity)
+            if fit:
                 # Regression line
                 x_data = np.log(x_vals)
                 y_data = np.log(t_vals)
@@ -102,9 +107,7 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
                 print(f"Power law fit: g(ε) = {A:.4f} * g^{B:.4f} (R² = {r_value**2:.4f})")
                 x_fit = np.linspace(min(x_vals), max(x_vals))
                 y_fit = A * x_fit**B
-                ax.plot(x_fit, y_fit, 'r--')
-            label = ", ".join([f"{p}={v}" for p, v in zip(series_params, series_key)])
-            ax.plot(x_vals, t_vals, marker='o', linestyle='-', label=label)
+                ax.plot(x_fit, y_fit, 'r--', label = 'fit')
     else:
         group = df.sort_values(by=xaxis_param)
         ax.plot(group[xaxis_param], group['t_event'], marker='o', linestyle='-', label=None)
@@ -115,6 +118,7 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
         ax.set_yscale('log')
     ax.set_xlabel("Growth parameter (g)")
     ax.set_ylabel('Critical time ($t_c$)')
+    ax.set_ylim(bottom = 0)
     ax.legend()
 
     if plot_filename:
@@ -252,15 +256,13 @@ def plot_phase_transition(csv_filename, plot_filename = None, loglog = False):
     epsilon_values = df['epsilon'].values
 
     if loglog:
-        x_data = np.log(epsilon_values[:20:])
-        y_data = np.log(g_values[:20])
+        x_data = epsilon_values
+        y_data = g_values
         # fit linear regression
         slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
-        A = np.exp(intercept)
-        B = slope
-        print(f"Power law fit: g(ε) = {A:.4f} * ε^{B:.4f} (R² = {r_value**2:.4f})")
+        print(f"Linear regression: g(ε) = {slope:.4f} * ε + {intercept} (R² = {r_value**2:.4f})")
         x_fit = np.linspace(0, max(epsilon_values), 201)
-        y_fit = A * x_fit**B
+        y_fit = slope * x_fit + intercept
 
 
     plt.figure()
@@ -268,10 +270,21 @@ def plot_phase_transition(csv_filename, plot_filename = None, loglog = False):
     plt.xlabel("Strength parameter ($\epsilon$)")
     plt.ylabel("Critical growth rate ($g_c(\epsilon)$)")
     plt.xlim(left = 0)
+    plt.ylim(bottom = 0)
+    # Add text above the line
+    plt.text(1, 1.5e-2, "Multilayer regime", ha='center', va='bottom', fontsize=12)
+
+    # Add text below the line
+    plt.text(1, 0.5e-2, "Monolayer regime", ha='center', va='top', fontsize=12)
     #plt.xscale('log')
     #plt.yscale('log)
+    # Force scientific notation on y-axis
+    ax = plt.gca()
+    ax.yaxis.set_major_formatter(ticker.ScalarFormatter(useMathText=True))
+    ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     if loglog:
-        plt.plot(x_fit, y_fit, 'r--')
+        plt.plot(x_fit, y_fit, 'r--', label = f"fit")
+    plt.legend()
 
     if plot_filename:
         output_dir = os.path.dirname(plot_filename)
@@ -296,9 +309,11 @@ if __name__ == "__main__":
 
     if choice == 'a':
         csv_path = "Results/data/critical_time_eps.csv"
+        plot_filename = "Results/plots/critical_time_log_log_fit.png"
         plot_critical_time_event_from_csv(
             csv_filename=csv_path,
-            loglog=False
+            plot_filename=None,
+            loglog=True, fit=True
         )
     
     elif choice == 'b':
