@@ -100,9 +100,9 @@ class FigureHandler:
         cbar.set_label("t")
         ax.set_xlabel('x')
         ax.set_ylabel('h(x,t)')
-        #ax.set_xlim(30, 70)
         ax.set_xlim(0, self.model.params['L'])
         ax.set_ylim(bottom = 0)
+        #ax.set_xlim(30, 70)
         #plt.legend(loc = 'right')
         #ax.grid(True)
         if plot_filename:
