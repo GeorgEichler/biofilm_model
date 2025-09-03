@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 import time
 import itertools
 import os
@@ -8,7 +9,7 @@ import csv
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 from helper_functions import find_first_k_minima
 
-def calculate_width_at_center(h, x, h_low, axis = 0):
+def calculate_width_at_center(h, x, h_low):
     """
     Calculates the width of interval containing the center where
     the film height surpasses the first layer
@@ -17,67 +18,69 @@ def calculate_width_at_center(h, x, h_low, axis = 0):
     H = np.asarray(h)
     x = np.asarray(x)
 
-    # Handle 1D: just reuse the original logic
-    if H.ndim == 1:
-        N = H.shape[0]
-        if x.shape[0] != N:
-            raise ValueError("x and h must have the same length for 1D input.")
-        center_idx = N // 2
-        if H[center_idx] < h_low:
-            return 0.0
-        # expand to the right
-        right_idx = center_idx
-        for i in range(center_idx + 1, N):
-            if H[i] >= h_low:
-                right_idx = i
-            else:
-                break
-        # expand to the left
-        left_idx = center_idx
-        for i in range(center_idx - 1, -1, -1):
-            if H[i] >= h_low:
-                left_idx = i
-            else:
-                break
-        return float(x[right_idx] - x[left_idx])
-
-    # 2D case: move spatial axis to axis 0 => shape (N_space, M_profiles)
-    if axis not in (0, 1):
-        raise ValueError("axis must be 0 or 1.")
-    if axis == 1:
-        H = H.T
+    if H.ndim != 2:
+        raise ValueError("H must be a 2D array with shape (N_space, times)")
 
     N, M = H.shape
-    if x.shape[0] != N:
-        raise ValueError("Length of x must match the spatial dimension of h.")
-
-    center_idx = N // 2
-    widths = np.zeros(M, dtype=float)
-
-    mask = H >= h_low  # True where h >= threshold
+    
+    center = N // 2
+    mask = H >= h_low
+    widths = np.zeros(M, dtype = float)
+    left_idx = np.full(M, center, dtype = int)
+    right_idx = np.full(M, center, dtype = int)
+    x_left = np.full(M, x[center], dtype = float)
+    x_right = np.full(M, x[center], dtype = float)
 
     for j in range(M):
-        if not mask[center_idx, j]:
-            widths[j] = 0.0
+        if not mask[center, j]:
+            # center below threshold
             continue
 
-        # Find left boundary: nearest index < center where mask is False
-        left_segment = mask[:center_idx + 1, j]              # [0 .. center]
-        left_false_idxs = np.where(~left_segment)[0]
-        if left_false_idxs.size == 0:
-            left_idx = 0
-        else:
-            left_idx = int(left_false_idxs[-1] + 1)          # first True after the last False
+        # ----- scan left (inclusive) -----
+        i = center
+        while i - 1 >= 0 and mask[i - 1, j]:
+            i -= 1
+        left_idx[j] = i
 
-        # Find right boundary: nearest index > center where mask is False
-        right_segment = mask[center_idx:, j]                  # [center .. end]
-        right_false_rel = np.where(~right_segment)[0]
-        if right_false_rel.size == 0:
-            right_idx = N - 1
-        else:
-            right_idx = int(center_idx + right_false_rel[0] - 1)  # last True before first False
+        # ----- scan right (inclusive) -----
+        i = center
+        while i + 1 < N and mask[i + 1, j]:
+            i += 1
+        right_idx[j] = i
 
-        widths[j] = float(x[right_idx] - x[left_idx])
+        # Make interpolation between grid ponts
+        xl = x[left_idx[j]]
+        xr = x[right_idx[j]]
+
+        
+        col = H[:, j]
+
+        # Left crossing between (left_idx-1) -- (left_idx), if possible
+        if left_idx[j] > 0:
+            h0, h1 = col[left_idx[j] - 1], col[left_idx[j]]
+            x0, x1 = x[left_idx[j] - 1], x[left_idx[j]]
+            denom = (h1 - h0)
+            # We expect h0 < h_low <= h1 (typical), but guard anyway:
+            if denom != 0:
+                t = (h_low - h0) / denom  # fraction from x0->x1
+                # clamp for numerical safety
+                t = max(0.0, min(1.0, t))
+                xl = x0 + t * (x1 - x0)
+
+        # Right crossing between (right_idx) -- (right_idx+1), if possible
+        if right_idx[j] < N - 1:
+            h0, h1 = col[right_idx[j]], col[right_idx[j] + 1]
+            x0, x1 = x[right_idx[j]], x[right_idx[j] + 1]
+            denom = (h1 - h0)
+            if denom != 0:
+                t = (h_low - h0) / denom  # fraction from x0->x1
+                t = max(0.0, min(1.0, t))
+                xr = x0 + t * (x1 - x0)
+
+        x_left[j] = xl
+        x_right[j] = xr
+
+        widths[j] = float(x[right_idx[j]] - x[left_idx[j]])
 
     return widths
 
@@ -170,38 +173,24 @@ def calculate_width_evolution(params, T = 1000, method = 'LSODA',
 
     return times, widths
 
-def plot_widths(sweep_params, base_params = None, T = 1000,
+def plot_widths(sweep_params, base_params = {}, T = 1000,
                 method = 'LSODA', init_type = 'gaussian',
                 plot_filename = None, csv_filename = None):
     """
     Simulation for calculating the width of the first layer of the biofilm
     """
-    if base_params is None:
-        base_params = {}
 
     _, ax = plt.subplots()
 
     param_keys = list(sweep_params.keys())
-    if not param_keys:
-        print("Error: `sweep_params` cannot be empty!")
-        return
-    
     param_values = list(sweep_params.values())
     param_combinations = list(itertools.product(*param_values))
     total_sims = len(param_combinations)
 
-    if csv_filename:
-        output_dir = os.path.dirname(csv_filename)
-        if output_dir:
-            os.makedirs(output_dir, exist_ok=True)
-        
-        fieldnames = [*param_keys, 'time', 'width']
-        with open(csv_filename,'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-
     print(f"Starting parameter sweep with {total_sims} simulations...")
     start_time = time.time()
+
+    results = []
 
     for i, combo in enumerate(param_combinations):
         current_sweep_params = dict(zip(param_keys, combo))
@@ -218,14 +207,9 @@ def plot_widths(sweep_params, base_params = None, T = 1000,
         label = ", ".join([f"{k}={v:.3g}" for k, v in current_sweep_params.items()])
         ax.plot(times, widths, label = label)
 
-        if csv_filename:
-            with open(csv_filename, 'a', newline = '') as f:
-                writer = csv.DictWriter(f, fieldnames=[*param_keys, 'time', 'width'])
-                for t, w in zip(times, widths):
-                    row = {**{k: current_sweep_params[k] for k in param_keys},
-                           'time': float(t), 'width': float(w)}
-                    writer.writerow(row)
-
+        for t, w in zip(times, widths):
+            row = {**current_sweep_params, "t": t, "width": w}
+            results.append(row)
         sim_end_time = time.time()
         print(f" -> Time for this step: {sim_end_time - sim_start_time:.2f}s.")
 
@@ -245,25 +229,81 @@ def plot_widths(sweep_params, base_params = None, T = 1000,
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
         print(f"Plot saved to {plot_filename}")
 
+    if csv_filename:
+        output_dir = os.path.dirname(csv_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        df = pd.DataFrame(results)
+        df = df[param_keys + ["t", "width"]]
+        df.to_csv(csv_filename, index = False)
+        print(f"Data saved to {csv_filename}")
+
     plt.show()
 
+def replot_width(csv_filename, plot_filename = None, 
+                      x_col="t", y_col="width", series_params=None, loglog=False):
+    """
+    Replot saved results. If series_params is None, uses all columns except x,y.
+    """
+    df = pd.read_csv(csv_filename)
+
+    if series_params is None:
+        series_params = [c for c in df.columns if c not in [x_col, y_col]]
+
+    # group by parameter combinations
+    grouped = df.groupby(series_params, dropna=False)
+
+    fig, ax = plt.subplots()
+    for keys, sub in grouped:
+        # build label
+        if not isinstance(keys, tuple):
+            keys = (keys,)
+        label = ", ".join(f"{k}={v:g}" for k, v in zip(series_params, keys))
+        sub_sorted = sub.sort_values(x_col)
+        ax.plot(sub_sorted[x_col].values, sub_sorted[y_col].values, label=label)
+
+    ax.set_xlabel(x_col)
+    ax.set_ylabel(y_col)
+    if loglog:
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+    ax.legend()
+
+    if plot_filename:
+        output_dir = os.path.dirname(plot_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok = True)
+        plt.savefig(plot_filename, dpi = 300, bbox_inches = 'tight')
+        print(f"Saved figure to: {plot_filename}")
+
+    plt.show()
 
 if __name__ == "__main__":
-    base_params = {
-        'L': 200,
-        'N': 2048
-    }
-    sweep_params = {
-        'g': [1e-2,1e-1,1]
-    }
+    choice = input("Width simulation (a) or replot from data (b): ")
+    
+    if choice == "a":
+        # Use odd number of grid points to get the middle grid
+        base_params = {
+            'L': 200,
+            'N': 2049
+        }
+        sweep_params = {
+            'g': [1e-2,1e-1,1]
+        }
 
-    plot_filename = "Results/plots/width_evolution_g.png"
-    csv_filename = "Results/data/width_evolution_g.csv"
+        plot_filename = "Results/plots/width_evolution_g_test.png"
+        csv_filename = "Results/data/width_evolution_g_test.csv"
 
-    plot_widths(
-        sweep_params=sweep_params,
-        T = 2000,
-        base_params=base_params,
-        plot_filename=plot_filename,
-        csv_filename=csv_filename
-    )
+        plot_widths(
+            sweep_params=sweep_params,
+            T = 10,
+            base_params=base_params,
+            plot_filename=plot_filename,
+            csv_filename=csv_filename
+        )
+
+    elif choice == "b":
+        plot_filename = None
+        csv_filename = "Results/data/width_evolution_g_test.csv"
+
+        replot_width(csv_filename=csv_filename, plot_filename=plot_filename)

@@ -336,8 +336,8 @@ if __name__ == "__main__":
         filename_height = "Results/plots/max_height_first_layer_many_steps_wider_interval.png"
         
         plot_first_layer_event_from_csv("Results/data/first_layer_many_steps_wider_interval.csv",
-                            filename_event_time=filename_event_time,
-                            filename_height=filename_height)
+                            filename_event_time=None,
+                            filename_height=None)
     else:
         print(f"There is no option {choice}!")
     
