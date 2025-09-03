@@ -36,7 +36,7 @@ def get_max_height_timeseries(params, T, init_type = 'gaussian', method = 'LSODA
     times, H = model.solve(h_init, T = T, method = method)
 
     # get maximum value of series
-    h_max_series = np.max(H, axis=0)
+    h_max_series = np.minimum(np.max(H, axis=0), 5.0)
 
     return times, h_max_series
 
@@ -103,14 +103,27 @@ def plot_max_height_evolution(sweep_params, base_params = {}, T = 1000,
     plt.show()
 
 def replot_max_height(csv_filename, plot_filename = None, 
-                      x_col="t", y_col="h_max", series_params=None, loglog=False):
+                      x_col="t", y_col="h_max", series_params=None, loglog=False, scaling = False):
     """
     Replot saved results. If series_params is None, uses all columns except x,y.
     """
     df = pd.read_csv(csv_filename)
 
+    # Apply scaling rule
+    if scaling:
+        g_vals = df["g"].values
+        t_vals = df[x_col].values
+
+        df["t_scaled"] = g_vals * t_vals
+
+        x_col = "t_scaled"
+
+    if loglog:
+        df = df[df[x_col] >= 1]
+
     if series_params is None:
-        series_params = [c for c in df.columns if c not in [x_col, y_col]]
+        exclude = {x_col, y_col, "t"}
+        series_params = [c for c in df.columns if c not in exclude]
 
     # group by parameter combinations
     grouped = df.groupby(series_params, dropna=False)
@@ -124,11 +137,15 @@ def replot_max_height(csv_filename, plot_filename = None,
         sub_sorted = sub.sort_values(x_col)
         ax.plot(sub_sorted[x_col].values, sub_sorted[y_col].values, label=label)
 
+    ax.set_ylim()
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
+    if scaling:
+        ax.set_xlabel("$t*g$")
+        ax.set_xlim(0, 25)
     if loglog:
         ax.set_xscale('log')
-        ax.set_yscale('log')
+        ax.set_xlim(left = 1)
     ax.legend()
 
     if plot_filename:
@@ -146,18 +163,18 @@ if __name__ == '__main__':
 
     if choice == "a":
         base_params = {
-            'L': 200,
-            'N': 2048
+            'L': 100,
+            'N': 1024
         }
         sweep_params = {
             'g': [1e-2, 1e-1, 1]
         }
 
-        plot_filename = "Results/plots/max_height_evolution_test.png"
-        csv_filename = "Results/data/max_height_evolution_test.csv"
+        plot_filename = "Results/plots/max_height_evolution_g_t2500.png"
+        csv_filename = "Results/data/max_height_evolution_g_t2500.csv"
 
         plot_max_height_evolution(
-            T = 10,
+            T = 2500,
             base_params=base_params,
             sweep_params=sweep_params,
             plot_filename=plot_filename,
@@ -165,8 +182,8 @@ if __name__ == '__main__':
         )
 
     elif choice == "b":
-        csv_filename = "Results/data/max_height_evolution_test.csv"
-        plot_filename = None
+        csv_filename = "Results/data/max_height_evolution_g_t2500.csv"
+        plot_filename = "Results/plots/max_height_evolution_g_log.png"
 
-        replot_max_height(csv_filename = csv_filename, plot_filename=plot_filename)
+        replot_max_height(csv_filename = csv_filename, plot_filename=plot_filename, loglog=True)
         

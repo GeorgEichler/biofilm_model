@@ -82,6 +82,8 @@ def calculate_width_at_center(h, x, h_low):
 
         widths[j] = float(x[right_idx[j]] - x[left_idx[j]])
 
+    widths = np.minimum(widths, 100)
+
     return widths
 
 def calculate_3_width_evolution(params, T = 1000, method = 'LSODA', 
@@ -241,14 +243,30 @@ def plot_widths(sweep_params, base_params = {}, T = 1000,
     plt.show()
 
 def replot_width(csv_filename, plot_filename = None, 
-                      x_col="t", y_col="width", series_params=None, loglog=False):
+                      x_col="t", y_col="width", series_params=None, xlog=False, ylog = False, scaling = False):
     """
     Replot saved results. If series_params is None, uses all columns except x,y.
     """
     df = pd.read_csv(csv_filename)
 
+    # Apply scaling rule
+    if scaling:
+        g_vals = df["g"].values
+        t_vals = df[x_col].values
+
+        df["t_scaled"] = g_vals * t_vals
+
+        x_col = "t_scaled"
+
+    if xlog:
+        df = df[df[x_col] >= 1]
+
+    if ylog:
+        df = df[df[y_col] >= 1]
+
     if series_params is None:
-        series_params = [c for c in df.columns if c not in [x_col, y_col]]
+        exclude = {x_col, y_col, "t"}
+        series_params = [c for c in df.columns if c not in exclude]
 
     # group by parameter combinations
     grouped = df.groupby(series_params, dropna=False)
@@ -262,11 +280,20 @@ def replot_width(csv_filename, plot_filename = None,
         sub_sorted = sub.sort_values(x_col)
         ax.plot(sub_sorted[x_col].values, sub_sorted[y_col].values, label=label)
 
+    #ax.set_xlim(left = 0)
+    ax.set_ylim(bottom = 0)
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
-    if loglog:
+    if scaling:
+        #ax.set_xlim(0, 20)
+        ax.set_xlabel("$t*g$")
+        ax.set_ylabel("Width of biofilm (w)")
+    if xlog:
         ax.set_xscale('log')
+        ax.set_xlim(left = 1)
+    if ylog:
         ax.set_yscale('log')
+        ax.set_ylim(bottom = 1)
     ax.legend()
 
     if plot_filename:
@@ -288,22 +315,22 @@ if __name__ == "__main__":
             'N': 2049
         }
         sweep_params = {
-            'g': [1e-2,1e-1,1]
+            'g': [1e-4, 5*1e-4, 1e-3]
         }
 
-        plot_filename = "Results/plots/width_evolution_g_test.png"
-        csv_filename = "Results/data/width_evolution_g_test.csv"
+        plot_filename = "Results/plots/width_evolution_g_monolayer.png"
+        csv_filename = "Results/data/width_evolution_g_monolayer.csv"
 
         plot_widths(
             sweep_params=sweep_params,
-            T = 10,
+            T = 20000,
             base_params=base_params,
             plot_filename=plot_filename,
             csv_filename=csv_filename
         )
 
     elif choice == "b":
-        plot_filename = None
-        csv_filename = "Results/data/width_evolution_g_test.csv"
+        plot_filename = "Results/plots/width_evolution_g_scaled.png"
+        csv_filename = "Results/data/width_evolution_g_monolayer.csv"
 
-        replot_width(csv_filename=csv_filename, plot_filename=plot_filename)
+        replot_width(csv_filename=csv_filename, plot_filename=None, ylog=False, xlog=False)

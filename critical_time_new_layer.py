@@ -8,16 +8,6 @@ import itertools
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 
-def compute_layer_width(x, h, h_thr):
-    above = (h >= h_thr)
-
-    if not(np.any(above)):
-        return np.nan, np.nan, np.nan
-    
-    i_left = np.argmax(above)
-    i_right = len(above) - 1 - np.argmax(above[::-1])
-
-    return float(x[i_right] - x[i_left])
 
 def run_until_new_layer(params, T = 10000, method = 'LSODA', init_type = 'gaussian'):
     """
@@ -47,20 +37,15 @@ def run_until_new_layer(params, T = 10000, method = 'LSODA', init_type = 'gaussi
     # check case if just boundary has been reached
     if h_event[0] > model.h1:
         t_event = np.nan
-        critical_width = np.nan
         print("Second layer has not been emerged.")
-    else:
-        # compute critical width
-        x = model.x
-        critical_width = compute_layer_width(x, h_event, model.h1)
 
-    return t_event, critical_width
+    return t_event, h_event, model.x
 
 
 def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
                               method = 'LSODA', init_type = 'gaussian',
                               plot_filename = None, csv_filename = None,
-                              plot_filename_critical_width = None):
+                              plot_filename_mean_height = None):
     """
     Run multiple sensitivity analysis simulations for multiple parameter values
     Save output to CSV and generate log-plots
@@ -101,15 +86,17 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
         
         sim_start_time = time.time()
 
-        t_event, critical_width = run_until_new_layer(
+        t_event, h_event, x = run_until_new_layer(
             full_params, T=T, method=method, init_type=init_type
         )
+        # Calculate the mean height
+        mean_height = np.trapz(h_event, x) / 100
         sim_end_time = time.time()
         print(f" -> Time for this step: {sim_end_time - sim_start_time:.2f}s.")
         if np.isnan(t_event):
             print("The biofilm is arrested, i.e. there is no critical time.")
 
-        result_data = {**current_sweep_params, 't_event': t_event, 'critical_width': critical_width}
+        result_data = {**current_sweep_params, 't_event': t_event, 'mean_height': mean_height}
         results.append(result_data)
 
     end_time = time.time()
@@ -173,10 +160,10 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
             os.makedirs(output_dir, exist_ok=True)
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
         print(f"Saved plot to: {plot_filename}")
-    
 
-    _, ax_w = plt.subplots()
+    _, ax_h = plt.subplots()
 
+    xaxis_param = "t_event"
     # Group results by the series parameters to plot separate lines
     if series_params:
         grouped_results = {}
@@ -190,28 +177,27 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
         for series_key, series_data in grouped_results.items():
             series_data.sort(key=lambda r: r[xaxis_param])
             x_vals = [r[xaxis_param] for r in series_data]
-            w_vals = [r['critical_width'] for r in series_data]
+            w_vals = [r['mean_height'] for r in series_data]
             
             # Create a descriptive label, e.g., "epsilon=0.5, A=0.1"
             label = ", ".join([f"{key}={val}" for key, val in zip(series_params, series_key)])
-            ax_w.plot(x_vals, w_vals, marker='o', linestyle='-', label=label)
+            ax_h.plot(x_vals, w_vals, marker='o', linestyle='-', label=label)
     else:
         # If no series parameters, plot all data as a single line
         results.sort(key=lambda r: r[xaxis_param])
         x_vals = [r[xaxis_param] for r in results]
-        w_vals = [r['critical_width'] for r in results]
-        ax_w.plot(x_vals, w_vals, marker='o', linestyle='-')
+        w_vals = [r['mean_height'] for r in results]
+        ax_h.plot(x_vals, w_vals, marker='o', linestyle='-')
 
     # Set scales and labels for the plots
-    ax_w.set_xscale('log')
-    ax_w.set_xlabel("Growth parameter (g)")
-    ax_w.set_ylabel('Critical width ($t_w$)')
+    ax_h.set_xlabel("$Critical time (t_c)$")
+    ax_h.set_ylabel('Mean height ($mean height$)')
     #ax_t.set_title('Time to second layer')
-    ax_w.legend()
+    ax_h.legend()
 
 
-    if plot_filename_critical_width:
-        output_dir = os.path.dirname(plot_filename_critical_width)
+    if plot_filename_mean_height:
+        output_dir = os.path.dirname(plot_filename_mean_height)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
@@ -221,8 +207,8 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
 
 if __name__ == '__main__':
     sweep_params = {
-        'g': np.logspace(-2, 0, 6),
-        'epsilon': [2]
+        'g': np.logspace(-1, 0, 6),
+        'epsilon': [1]
     }
 
     plot_filename = "Results/plots/critical_time_eps05.png"
