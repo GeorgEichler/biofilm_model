@@ -138,8 +138,8 @@ def replot_max_height(csv_filename, plot_filename = None,
         ax.plot(sub_sorted[x_col].values, sub_sorted[y_col].values, label=label)
 
     ax.set_ylim()
-    ax.set_xlabel(x_col)
-    ax.set_ylabel(y_col)
+    ax.set_xlabel("Time t")
+    ax.set_ylabel("$h_{max}(t)$")
     if scaling:
         ax.set_xlabel("$t*g$")
         ax.set_xlim(0, 25)
@@ -163,18 +163,18 @@ if __name__ == '__main__':
 
     if choice == "a":
         base_params = {
-            'L': 100,
-            'N': 1024
+            'L': 200,
+            'N': 2048
         }
         sweep_params = {
             'g': [1e-2, 1e-1, 1]
         }
 
-        plot_filename = "Results/plots/max_height_evolution_g_t2500.png"
-        csv_filename = "Results/data/max_height_evolution_g_t2500.csv"
+        plot_filename = "Results/plots/max_height_evolution_g_L200.png"
+        csv_filename = "Results/data/max_height_evolution_g_L200.csv"
 
         plot_max_height_evolution(
-            T = 2500,
+            T = 2000,
             base_params=base_params,
             sweep_params=sweep_params,
             plot_filename=plot_filename,
@@ -182,8 +182,8 @@ if __name__ == '__main__':
         )
 
     elif choice == "b":
-        csv_filename = "Results/data/max_height_evolution_g_t2500.csv"
-        plot_filename = "Results/plots/max_height_evolution_g_log.png"
+        csv_filename = "Results/data/max_height_evolution_g_L200.csv"
+        plot_filename = "Results/plots/max_height_evolution_g_L200_log.png"
 
         replot_max_height(csv_filename = csv_filename, plot_filename=plot_filename, loglog=True)
         

@@ -77,7 +77,7 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
 
     # If not given, infer series parameters from columns (exclude x and t_event)
     if series_params is None:
-        series_params = [col for col in df.columns if col not in [xaxis_param, 't_event', 'critical_width']]
+        series_params = [col for col in df.columns if col not in [xaxis_param, 't_event', 'mean_height']]
 
     _, ax = plt.subplots()
 
@@ -119,6 +119,77 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
     ax.set_xlabel("Growth parameter (g)")
     ax.set_ylabel('Critical time ($t_c$)')
     ax.set_ylim(bottom = 0)
+    ax.legend()
+
+    if plot_filename:
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Saved plot to {plot_filename}")
+
+    plt.show()
+
+def plot_critical_time_mean_height(csv_filename, xaxis_param='t_event', series_params=None, plot_filename=None,
+                                      loglog = False, fit = False):
+    """
+    Recreate the plot of critical time vs growth parameter from saved CSV.
+    
+    Args:
+        csv_filename (str): Path to CSV file (must contain columns including `t_event`).
+        xaxis_param (str): Parameter to use on the x-axis (default: 'g').
+        series_params (list[str] | None): Parameters to separate into different series (default: infer from CSV).
+        plot_filename (str | None): If given, save plot to this file.
+    """
+    if not os.path.exists(csv_filename):
+        raise FileNotFoundError(f"No such file: {csv_filename}")
+
+    # Load CSV
+    df = pd.read_csv(csv_filename)
+    print(f"Loaded {len(df)} rows from {csv_filename}.")
+    print("Columns:", df.columns.tolist())
+
+    # If not given, infer series parameters from columns (exclude x and t_event)
+    if series_params is None:
+        series_params = [col for col in df.columns if col not in [xaxis_param, 'g', 'mean_height']]
+
+    _, ax = plt.subplots()
+
+    if series_params:
+        grouped = df.groupby(series_params)
+        for series_key, group in grouped:
+            opacity = 1
+            #if series_key[0] == 0.5 or series_key[0] == 2: continue
+            group = group.sort_values(by=xaxis_param)
+            x_vals = group[xaxis_param].values
+            h_vals = group['mean_height'].values
+            if not isinstance(series_key, tuple):
+                series_key = (series_key,)
+            label = ", ".join([f"{p}={v}" for p, v in zip(series_params, series_key)])
+            ax.plot(x_vals, h_vals, marker='o', linestyle='-', label=label, alpha = opacity)
+            if fit:
+                # Regression line
+                x_data = np.log(x_vals)
+                y_data = np.log(h_vals)
+                # treat case of eps = 2 separate
+                if series_key[0] == 2:
+                    x_data = x_data[2:]
+                    y_data = y_data[2:]
+                slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
+                A = np.exp(intercept)
+                B = slope
+                print(f"Power law fit: g(ε) = {A:.4f} * g^{B:.4f} (R² = {r_value**2:.4f})")
+                x_fit = np.linspace(min(x_vals), max(x_vals))
+                y_fit = A * x_fit**B
+                ax.plot(x_fit, y_fit, 'r--', label = 'fit')
+    else:
+        group = df.sort_values(by=xaxis_param)
+        ax.plot(group[xaxis_param], group['t_event'], marker='o', linestyle='-', label=None)
+
+    
+    if loglog:
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+    ax.set_xlabel(r"Critical time ($t_c$)")
+    ax.set_ylabel(r'Mean height ($\overline{h}$)')
+    ax.set_ylim()
     ax.legend()
 
     if plot_filename:
@@ -304,8 +375,8 @@ if __name__ == "__main__":
             "figure.dpi": 100 #change resolution, standard is 100
         })
     
-    choice = input("Choose plot option: \n critical time (a), \nphase transition (b), \n" \
-    "width (c), \nnew layer emergence (d) ")
+    choice = input("Choose plot option: \n critical time (a), \nmean height (b), \nphase transition (c), \n" \
+    "width (d), \nnew layer emergence (e) ")
 
     if choice == 'a':
         csv_path = "Results/data/critical_time_eps.csv"
@@ -313,15 +384,23 @@ if __name__ == "__main__":
         plot_critical_time_event_from_csv(
             csv_filename=csv_path,
             plot_filename=None,
-            loglog=False, fit=False
+            loglog=True, fit=False
+        )
+
+    elif choice == 'b':
+        csv_path = "Results/data/critical_time_long_range.csv"
+        plot_filename = "Results/plots/critical_time_mean_height.png"
+        plot_critical_time_mean_height(
+            csv_filename=csv_path,
+            plot_filename=None
         )
     
-    elif choice == 'b':
+    elif choice == 'c':
         csv_path = "Results/data/phase_transition_g_eps.csv"
         plot_filename = "Results/plots/phase_transition_eps_g_fit.png"
         plot_phase_transition(csv_filename = csv_path, plot_filename=plot_filename, loglog = True)
 
-    elif choice == 'c':
+    elif choice == 'd':
         csv_path = "Results/data/width_evolution_g002.csv"
 
         plot_width_from_csv(
@@ -331,7 +410,7 @@ if __name__ == "__main__":
             logy=False,
         )
 
-    elif choice == 'd':
+    elif choice == 'e':
         filename_event_time = "Results/plots/event_time_first_layer_many_steps_wider_interval.png"
         filename_height = "Results/plots/max_height_first_layer_many_steps_wider_interval.png"
         

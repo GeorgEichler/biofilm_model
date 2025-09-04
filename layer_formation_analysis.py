@@ -36,7 +36,7 @@ def run_until_first_layer(params, T = 10000, method = 'LSODA', init_type = 'gaus
     L = model.params['L']
     h_center = float(np.interp(L/2, model.x, h_event))
 
-    return t_event, h_center
+    return t_event, h_center, h_event, model.x
 
 
 def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
@@ -83,7 +83,7 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
         
         sim_start_time = time.time()
 
-        t_event, h_center = run_until_first_layer(
+        t_event, h_center, _, _ = run_until_first_layer(
             full_params, T=T, method=method, init_type=init_type
         )
         sim_end_time = time.time()

@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from scipy.optimize import curve_fit
 import time
 import itertools
 import os
@@ -8,6 +9,13 @@ import csv
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 from helper_functions import find_first_k_minima
+
+# models
+def _linear(x, a, b):
+    return a*x + b
+
+def _power(x, C, p, d):
+    return C * np.power(x, p) + d
 
 def calculate_width_at_center(h, x, h_low):
     """
@@ -242,7 +250,7 @@ def plot_widths(sweep_params, base_params = {}, T = 1000,
 
     plt.show()
 
-def replot_width(csv_filename, plot_filename = None, 
+def replot_width(csv_filename, plot_filename = None, min_width = None, t_min = None, t_max = None, fit = False,
                       x_col="t", y_col="width", series_params=None, xlog=False, ylog = False, scaling = False):
     """
     Replot saved results. If series_params is None, uses all columns except x,y.
@@ -280,12 +288,57 @@ def replot_width(csv_filename, plot_filename = None,
         sub_sorted = sub.sort_values(x_col)
         ax.plot(sub_sorted[x_col].values, sub_sorted[y_col].values, label=label)
 
-    #ax.set_xlim(left = 0)
+        if fit:
+            fit_sub = sub_sorted.copy()
+            fit_sub = sub.drop_duplicates(subset=[y_col], keep="first")
+            #sub = sub.sort_values(x_col)
+
+            # trim width (optional)
+            if min_width:
+                fit_sub = fit_sub[fit_sub[y_col] > min_width]
+
+            if t_min is not None:
+                fit_sub = fit_sub[sub[x_col] >= t_min]
+            if t_max is not None:
+                fit_sub = fit_sub[fit_sub[x_col] <= t_max]
+            
+            x = fit_sub[x_col].values
+            y = fit_sub[y_col].values
+            a0 = (y[-1] - y[0]) / (x[-1] - x[0]) if (x[-1] - x[0]) != 0 else 0.0
+            b0 = y.mean() - a0 * x.mean()
+            try:
+                (a_hat, b_hat), _ = curve_fit(_linear, x, y, p0=(a0, b0), maxfev=10000)
+                xfit = np.linspace(x.min(), x.max(), 200)
+                ax.plot(xfit, _linear(xfit, a_hat, b_hat), linestyle="--",
+                        label=f"Linear fit ({label})")
+                print(f"Linear fit {label}: y = {a_hat:.6g} * t + {b_hat:.6g}")
+            except Exception as e:
+                print(f"[WARN] Linear fit failed for {label}: {e}")
+            
+            pmask = (x > 0) & (y > 0)
+            
+            xp, yp = x[pmask], y[pmask]
+            # rough initial guesses: C0 ≈ y0 / x0, p0 ≈ 1
+            C0 = max(yp[0] / max(xp[0], 1e-12), 1e-12)
+            p0 = 1.0
+            d0 = 0
+            try:
+                (C_hat, p_hat, d_hat), _ = curve_fit(
+                    _power, xp, yp, p0=(C0, p0, d0),
+                    bounds=([0.0, -np.inf, 0.0], [np.inf, np.inf, np.inf])  # keep C ≥ 0
+                )
+                xfit = np.linspace(xp.min(), xp.max(), 400)
+                ax.plot(xfit, _power(xfit, C_hat, p_hat, d_hat), linestyle=":",
+                        label=f"Power fit ({label})")
+                print(f"Power-law fit {label}: y = {C_hat:.6g} * t^{p_hat:.6g}")
+            except Exception as e:
+                print(f"[WARN] Power-law fit failed for {label}: {e}")
+    ax.set_xlim(left = 0)
     ax.set_ylim(bottom = 0)
-    ax.set_xlabel(x_col)
-    ax.set_ylabel(y_col)
+    ax.set_xlabel("Time (t)")
+    ax.set_ylabel("Width (w)")
     if scaling:
-        #ax.set_xlim(0, 20)
+        ax.set_xlim(0, 20)
         ax.set_xlabel("$t*g$")
         ax.set_ylabel("Width of biofilm (w)")
     if xlog:
@@ -330,7 +383,7 @@ if __name__ == "__main__":
         )
 
     elif choice == "b":
-        plot_filename = "Results/plots/width_evolution_g_scaled.png"
+        plot_filename = "Results/plots/width_evolution_g_Monolayer_log.png"
         csv_filename = "Results/data/width_evolution_g_monolayer.csv"
 
-        replot_width(csv_filename=csv_filename, plot_filename=None, ylog=False, xlog=False)
+        replot_width(csv_filename=csv_filename, plot_filename=plot_filename, xlog = True, scaling=False, min_width=5, fit = False)

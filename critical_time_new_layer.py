@@ -90,7 +90,11 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
             full_params, T=T, method=method, init_type=init_type
         )
         # Calculate the mean height
-        mean_height = np.trapz(h_event, x) / 100
+        if np.isnan(t_event):
+            mean_height = np.nan
+        else:
+            L = float(x[-1] - x[0])
+            mean_height = np.trapz(h_event, x) / L
         sim_end_time = time.time()
         print(f" -> Time for this step: {sim_end_time - sim_start_time:.2f}s.")
         if np.isnan(t_event):
@@ -177,21 +181,21 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
         for series_key, series_data in grouped_results.items():
             series_data.sort(key=lambda r: r[xaxis_param])
             x_vals = [r[xaxis_param] for r in series_data]
-            w_vals = [r['mean_height'] for r in series_data]
+            h_vals = [r['mean_height'] for r in series_data]
             
             # Create a descriptive label, e.g., "epsilon=0.5, A=0.1"
             label = ", ".join([f"{key}={val}" for key, val in zip(series_params, series_key)])
-            ax_h.plot(x_vals, w_vals, marker='o', linestyle='-', label=label)
+            ax_h.plot(x_vals, h_vals, marker='o', linestyle='-', label=label)
     else:
         # If no series parameters, plot all data as a single line
         results.sort(key=lambda r: r[xaxis_param])
         x_vals = [r[xaxis_param] for r in results]
-        w_vals = [r['mean_height'] for r in results]
-        ax_h.plot(x_vals, w_vals, marker='o', linestyle='-')
+        h_vals = [r['mean_height'] for r in results]
+        ax_h.plot(x_vals, h_vals, marker='o', linestyle='-')
 
     # Set scales and labels for the plots
-    ax_h.set_xlabel("$Critical time (t_c)$")
-    ax_h.set_ylabel('Mean height ($mean height$)')
+    ax_h.set_xlabel(r"Critical time ($t_c$)")
+    ax_h.set_ylabel(r'Mean height ($\overline{h}$)')
     #ax_t.set_title('Time to second layer')
     ax_h.legend()
 
@@ -207,13 +211,16 @@ def growth_parameter_analysis(sweep_params, base_params = {}, T = 10000,
 
 if __name__ == '__main__':
     sweep_params = {
-        'g': np.logspace(-1, 0, 6),
-        'epsilon': [1]
+        'g': np.logspace(-2, 0, 51),
+        'epsilon': [0.5, 1, 2]
     }
 
-    plot_filename = "Results/plots/critical_time_eps05.png"
-    csv_filename = "Results/data/critical_time_eps05.csv"
+    plot_filename = "Results/plots/critical_time_long_range.png"
+    csv_filename = "Results/data/critical_time_long_range.csv"
+    plot_filename_mean_height = "Results/plots/critical_time_mean_height.png"
 
     growth_parameter_analysis(sweep_params=sweep_params,
-                              T = 50000, plot_filename = None, csv_filename = None)
+                              T = 50000, plot_filename = plot_filename,
+                              csv_filename = csv_filename,
+                              plot_filename_mean_height=plot_filename_mean_height)
 
