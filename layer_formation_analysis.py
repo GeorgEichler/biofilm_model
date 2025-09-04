@@ -239,7 +239,7 @@ def phase_transition_analysis(params, base_params = {}, T = 10000,
     plt.plot(result_g, values, marker='o', linestyle='-')
     plt.xlabel(xlabel)
     if parameter == 'epsilon':
-        plt.ylabel("Strength binding potential ($\epsilon$)")
+        plt.ylabel("Energy scale ($\epsilon$)")
     elif parameter == 'c':
         plt.ylabel("Decay parameter (c)")
     plt.xscale('log')
