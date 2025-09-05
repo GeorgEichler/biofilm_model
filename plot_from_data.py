@@ -333,12 +333,12 @@ def plot_phase_transition(csv_filename, plot_filename = None, loglog = False):
         slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
         print(f"Linear regression: g(ε) = {slope:.4f} * ε + {intercept} (R² = {r_value**2:.4f})")
         x_fit = np.linspace(0, max(epsilon_values), 201)
-        y_fit = slope * x_fit + intercept
+        y_fit = slope * x_fit
 
 
     plt.figure()
     plt.plot(epsilon_values, g_values, marker = 'o', linestyle = '-')
-    plt.xlabel("Strength parameter ($\epsilon$)")
+    plt.xlabel("Energy scale ($\epsilon$)")
     plt.ylabel("Critical growth rate ($g_c(\epsilon)$)")
     plt.xlim(left = 0)
     plt.ylim(bottom = 0)

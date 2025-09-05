@@ -6,7 +6,7 @@ import time
 
 def plot_event_profiles_grid(
         g_values, epsilon_values,
-        base_params = {}, T = 10000,
+        base_params = {}, T = 50000,
         method = 'LSODA', init_type = 'gaussian',
         plot_filename = None,
         csv_filename = "Results/data/event_profiles.csv"):
@@ -75,8 +75,8 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
                                    plot_filname = None):
     df = pd.read_csv(csv_filename)
 
-    nrows, ncols = len(epsilon_values), len(g_values)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(12, 12), sharex=True, sharey=True)
+    ncols, nrows = len(epsilon_values), len(g_values)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(7.5, 10.5), sharex=True, sharey=True)
 
     for i, g in enumerate(g_values):
         for j, eps in enumerate(epsilon_values):
@@ -90,14 +90,14 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
             h_cols = [c for c in row.columns if c.startswith("h_")]
             h_event = row[h_cols].values[0]
             ax.plot(x, h_event)
-            ax.set_title(f"g={g}, ε={eps}, $t_{{event}}$={row['t_event'].values[0]:.3g}")
+            #ax.set_title(f"g={g}, ε={eps}, $t_{{event}}$={row['t_event'].values[0]:.3g}")
             ax.set_xlim(0, 100)
-            ax.set_ylim(bottom = 0)
+            ax.set_ylim(0, 5.5)
 
             if i == 0:
-                ax.set_xlabel("x")
+                ax.set_xlabel(fr"x, $\epsilon$ = {eps}")
             if j == 0:
-                ax.set_ylabel("$h(x, t_{event})$")
+                ax.set_ylabel(fr"$h(x, t_{{event}})$" +"\n" + f"g = {g}")
 
     if plot_filename:
         outdir = os.path.dirname(plot_filename)
@@ -110,8 +110,8 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
 
 if __name__ == "__main__":
     choice = input("Profile simulation (a) or plotting (b): ")
-    g_values = [1, 10]
-    epsilon_values = [0.5, 1]
+    g_values = [1e-3, 1e-2, 1e-1, 1, 10]
+    epsilon_values = [0.5, 1, 1.5, 2]
 
     if choice == "a":
 
@@ -120,5 +120,5 @@ if __name__ == "__main__":
     elif choice == "b":
         _, _, _, x = run_until_first_layer({'epsilon': 0, 'g': 10})
         csv_filename = "Results/data/event_profiles.csv"
-        plot_filename = None
+        plot_filename = "Results/plots/event_profiles.png"
         replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values, plot_filname=plot_filename)

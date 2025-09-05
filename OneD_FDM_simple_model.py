@@ -203,8 +203,8 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 10**(-5), 'L': 100, 'N': 1024, 'epsilon': 1}
-    T = 20000
+    params = {'amplitude': 1.0, 'g': 10**(-1), 'L': 200, 'N': 2048, 'epsilon': 1}
+    T = 200
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
     t_eval = np.linspace(0, T, 6)
@@ -222,12 +222,12 @@ if __name__ == "__main__":
         f = model.f
     )
 
-    plot_filename = 'thin_film_g10-3_long_simulation_width'
+    plot_filename = 'thin_film_g10-1_eps1_t200_L200'
     save_filename = "Results/values/thin_film_profile.npz"
 
     figure_handler = fh.FigureHandler(model)
     model.save_profile_values(times, H, save_filename)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = None)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = plot_filename)
     #figure_handler.plot_growth(H.T, times)
     #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
     #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")
