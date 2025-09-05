@@ -171,7 +171,7 @@ def append_higher_layers_bisect(
         print(f"Data saved to {save_csv}")
 
 def plot_layer_phase_diagram(
-        data, 
+        data, plot_filename = None,
         x_col = "epsilon", y_col = "g", layer_col = 'layer',
         cmap = 'viridis'):
     df = pd.read_csv(data)
@@ -229,15 +229,19 @@ def plot_layer_phase_diagram(
         ax.fill_between(xgrid, y_lower, y_upper, color=color, linewidth=0)
 
 
-    xmin = max(x1.min(), x2.min())
-    xmax = min(x1.max(), x2.max())
-    x0, y0 = curves[layers[0]]
-    xgrid = np.linspace(xmin, xmax, 101)
-    y1i = np.interp(xgrid, x1, y1)
-    y2i = np.interp(xgrid, x2, y2)
-    y_upper = np.maximum(y1i, y2i)
-    y_lower = np.minimum(y1i, y2i)
-    ax.fill_between(xgrid, y_lower, y_upper, color=layers_to_colors[0], linewidth=0)
+    # Fill below first line down to baseline
+    if layers and layers[0] in curves:
+        x0, y0 = curves[layers[0]]
+        
+        # use axis bottom (before scaling applied)
+        ymin = np.nanmin(df[y_col].values)
+        y_min_fill = 0
+        xgrid = np.linspace(x0.min(), x0.max(), 101)
+        y0i = np.interp(xgrid, x0, y0)
+        ax.fill_between(
+            xgrid, np.full_like(xgrid, y_min_fill), y0i,
+            color=layers_to_colors[layers[0]], linewidth=0
+        )
 
     for i in range(len(layers) - 1):
         L_low = layers[i]
@@ -250,6 +254,12 @@ def plot_layer_phase_diagram(
     ax.set_xlabel("Energy scale $\epsilon$")
     ax.set_ylabel("Growth rate $g$")
     ax.legend()
+    if plot_filename:
+        output_dir = os.path.dirname(plot_filename)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+        plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
+        print(f"Figure saved to: {plot_filename}")
     plt.show()
         
 
@@ -258,5 +268,7 @@ if __name__ == "__main__":
     g_values = np.logspace(np.log10(0.0005), -1, 201)
     save_csv = "Results/data/phase_diagram.csv"
     #append_higher_layers(g_values= g_values, phase_csv=csv_filename, save_csv=save_csv)
-    append_higher_layers_bisect(g_upper = 0.02, phase_csv=csv_filename,
-                                save_csv=save_csv)
+    #append_higher_layers_bisect(g_upper = 0.02, phase_csv=csv_filename,
+    #                            save_csv=save_csv)
+    plot_filename = "Results/plots/phase_diagram.png"
+    plot_layer_phase_diagram(data=save_csv, plot_filename=plot_filename)
