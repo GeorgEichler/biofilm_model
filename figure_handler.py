@@ -47,9 +47,20 @@ class FigureHandler:
         plt.plot(h_array, g(h_array))
         plt.xlabel('h')
         plt.ylabel('G(h)')
-        plt.xlim(0, h_max)
         #plt.title("Growth function")
         plt.axhline(y=0, color='black', linestyle='--')
+        ticks, labels = plt.xticks()
+        ticks = list(ticks)
+        labels = [lab.get_text() for lab in labels]
+        ticks.append(self.model.ha)
+        labels.append(r"$h_a$")
+        ticks.append(0.2)
+        labels.append(r"$h_f$")
+        ticks.append(5)
+        labels.append(r"$h_{max}$")
+        plt.xticks(ticks, labels)
+        plt.xlim(0, h_max)
+
         if filename:
             self.save_figure(filename)
 
@@ -119,7 +130,7 @@ class FigureHandler:
         plt.ylabel('G(h(x))')
         plt.legend(loc = 'right')
         if filename:
-            self.save_figure(filename)
+            self.save_figure(filename, dpi = 300, bbox_inches = 'thight')
 
     def plot_free_energy(self, H, times, filename = None):
         # Convert to numpy array to use slice operations

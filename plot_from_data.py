@@ -84,14 +84,14 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
     if series_params:
         grouped = df.groupby(series_params)
         for series_key, group in grouped:
-            opacity = 1
-            #if series_key[0] == 0.5 or series_key[0] == 2: continue
+            opacity = 0.5
+            if series_key[0] == 0.5 or series_key[0] == 2: continue
             group = group.sort_values(by=xaxis_param)
             x_vals = group[xaxis_param].values
             t_vals = group['t_event'].values
             if not isinstance(series_key, tuple):
                 series_key = (series_key,)
-            label = ", ".join([f"{p}={v}" for p, v in zip(series_params, series_key)])
+            label = ", ".join([r"$\epsilon$" + f"={v}" for p, v in zip(series_params, series_key)])
             ax.plot(x_vals, t_vals, marker='o', linestyle='-', label=label, alpha = opacity)
             if fit:
                 # Regression line
@@ -107,7 +107,7 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
                 print(f"Power law fit: g(ε) = {A:.4f} * g^{B:.4f} (R² = {r_value**2:.4f})")
                 x_fit = np.linspace(min(x_vals), max(x_vals))
                 y_fit = A * x_fit**B
-                ax.plot(x_fit, y_fit, 'r--', label = 'fit')
+                ax.plot(x_fit, y_fit, 'r--', label = fr'Fit $\mathcal{{O}}(g^{{{slope:.2f}}})$')
     else:
         group = df.sort_values(by=xaxis_param)
         ax.plot(group[xaxis_param], group['t_event'], marker='o', linestyle='-', label=None)
@@ -383,8 +383,8 @@ if __name__ == "__main__":
         plot_filename = "Results/plots/critical_time_log_log_fit.png"
         plot_critical_time_event_from_csv(
             csv_filename=csv_path,
-            plot_filename=None,
-            loglog=True, fit=False
+            plot_filename=plot_filename,
+            loglog=True, fit=True
         )
 
     elif choice == 'b':

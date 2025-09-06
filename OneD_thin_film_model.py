@@ -40,6 +40,7 @@ class OneD_Base_Model(ABC):
         self.h1 = minima[1]
         self.h2 = minima[2]
         self.ha = p['ha'] # activation point
+        self.hf = p['hf']
 
     @abstractmethod
     def _setup_numerical_operators(self):

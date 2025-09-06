@@ -284,10 +284,10 @@ def plot_layer_phase_diagram_seaborn(
         raise ValueError("No layers found in the data.")
 
     # Build a seaborn color list for layers
-    # If `palette` is a string, seaborn will resolve it to a palette;
-    # if it's a matplotlib colormap, seaborn will sample it too.
-    area_colors = sns.color_palette(palette, n_colors=nL + 1)
-    layers_to_colors = {L: area_colors[i] for i, L in enumerate(layers)}
+    first_color = sns.color_palette("Greens", n_colors = 3)[2] # medium green
+    blue_colors = sns.color_palette("Blues", n_colors = nL) 
+    area_colors = [first_color] + blue_colors
+    layer_name = ["1 Layer", "2 Layer", "3 Layer", "4 Layer"]
 
     # Prepare curves per layer (sorted in x)
     curves = {}
@@ -302,15 +302,10 @@ def plot_layer_phase_diagram_seaborn(
 
     # Plot lines with seaborn
     fig, ax = plt.subplots()
-    for L in layers:
-        if L not in curves:
-            continue
-        x, y = curves[L]
-        sns.lineplot(x=x, y=y, ax=ax,
-                     color=layers_to_colors[L], linewidth=2)
+    
 
     # Helper: fill between two curves over their overlapping x-range
-    def _fill_between_curves(x1, y1, x2, y2, color):
+    def _fill_between_curves(x1, y1, x2, y2, color, label):
         xmin = max(np.nanmin(x1), np.nanmin(x2))
         xmax = min(np.nanmax(x1), np.nanmax(x2))
         if not np.isfinite(xmin) or not np.isfinite(xmax) or xmax <= xmin:
@@ -320,14 +315,14 @@ def plot_layer_phase_diagram_seaborn(
         y2i = np.interp(xgrid, x2, y2)
         y_upper = np.maximum(y1i, y2i)
         y_lower = np.minimum(y1i, y2i)
-        ax.fill_between(xgrid, y_lower, y_upper, color=color, linewidth=0,  label = f"Layer {2}")
+        ax.fill_between(xgrid, y_lower, y_upper, color=color, linewidth=0,  label = label)
 
     # Fill below the first curve down to a baseline (0 by default)
     if layers and layers[0] in curves:
         x0, y0 = curves[layers[0]]
         xgrid = np.linspace(np.nanmin(x0), np.nanmax(x0), 201)
         y0i = np.interp(xgrid, x0, y0)
-        ax.fill_between(xgrid, 0.0, y0i, color=area_colors[0], linewidth=0, label = "Layer 1")
+        ax.fill_between(xgrid, 0.0, y0i, color=area_colors[0], linewidth=0, label = layer_name[0])
 
     # Fill between adjacent layers
     for i in range(nL - 1):
@@ -340,7 +335,7 @@ def plot_layer_phase_diagram_seaborn(
             x2, y2 = curves[L_high]
             x2 = np.r_[x2, 2.0]
             y2 = np.r_[y2, y[-1]]
-            _fill_between_curves(x1, y1, x2, y2, color=area_colors[i+1])
+            _fill_between_curves(x1, y1, x2, y2, color=area_colors[i+1], label = layer_name[i+1])
 
     # Color top area
     xt, yt = curves[layers[-1]]
@@ -349,7 +344,7 @@ def plot_layer_phase_diagram_seaborn(
     # if y_top not given, cap at max y in data or top curve
     ycap = 0.02
     ax.fill_between(xgrid, yti, ycap, color=area_colors[-1],
-                    linewidth=0, label=f"Above {layers[-1]}")
+                    linewidth=0, label= layer_name[-1])
 
     # After filling, draw black outlines for all layer curves
     for L in layers:
@@ -358,14 +353,16 @@ def plot_layer_phase_diagram_seaborn(
             ax.plot(x, y, color="black", linewidth=1.0)
 
     # Labels/legend
-    ax.set_xlabel(r"Energy scale $\epsilon$")
-    ax.set_ylabel(r"Growth rate $g$")
+    ax.set_xlabel(r"Energy scale $(\epsilon)$")
+    ax.set_ylabel(r"Growth rate $(g)$")
     ax.legend(
-    title="Layers",
     bbox_to_anchor=(1.05, 1),   # x, y position of the anchor
     loc="upper left",           # position relative to the anchor
     borderaxespad=0.)
 
+    ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    ax.set_xlim(0.05, 2)
+    ax.set_ylim(0, 0.0188) # choose endpoint of 2 layer line
     # Tidy layout and save/show
     if plot_filename:
         outdir = os.path.dirname(plot_filename)
