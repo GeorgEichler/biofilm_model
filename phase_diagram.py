@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import time
+import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 
@@ -261,7 +262,118 @@ def plot_layer_phase_diagram(
         plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
         print(f"Figure saved to: {plot_filename}")
     plt.show()
-        
+
+def plot_layer_phase_diagram_seaborn(
+        data, plot_filename=None,
+        x_col="epsilon", y_col="g", layer_col="layer",
+        palette="viridis", context="talk", style="white"):
+    """
+    Phase diagram with colored bands between layer curves using seaborn for
+    theming and palettes, and matplotlib for the fill_between shading.
+    """
+    # Load data
+    df = pd.read_csv(data)
+
+    # Theme
+    sns.set_theme(context=context, style=style)
+
+    # Layers sorted (ensures deterministic color order)
+    layers = sorted(pd.unique(df[layer_col]))
+    nL = len(layers)
+    if nL == 0:
+        raise ValueError("No layers found in the data.")
+
+    # Build a seaborn color list for layers
+    # If `palette` is a string, seaborn will resolve it to a palette;
+    # if it's a matplotlib colormap, seaborn will sample it too.
+    area_colors = sns.color_palette(palette, n_colors=nL + 1)
+    layers_to_colors = {L: area_colors[i] for i, L in enumerate(layers)}
+
+    # Prepare curves per layer (sorted in x)
+    curves = {}
+    for L in layers:
+        sub = df[df[layer_col] == L].copy()
+        if sub.empty:
+            continue
+        sub = sub.sort_values(by=x_col)
+        x = sub[x_col].to_numpy()
+        y = sub[y_col].to_numpy()
+        curves[L] = (x, y)
+
+    # Plot lines with seaborn
+    fig, ax = plt.subplots()
+    for L in layers:
+        if L not in curves:
+            continue
+        x, y = curves[L]
+        sns.lineplot(x=x, y=y, ax=ax,
+                     color=layers_to_colors[L], linewidth=2)
+
+    # Helper: fill between two curves over their overlapping x-range
+    def _fill_between_curves(x1, y1, x2, y2, color):
+        xmin = max(np.nanmin(x1), np.nanmin(x2))
+        xmax = min(np.nanmax(x1), np.nanmax(x2))
+        if not np.isfinite(xmin) or not np.isfinite(xmax) or xmax <= xmin:
+            return
+        xgrid = np.linspace(xmin, xmax, 201)
+        y1i = np.interp(xgrid, x1, y1)
+        y2i = np.interp(xgrid, x2, y2)
+        y_upper = np.maximum(y1i, y2i)
+        y_lower = np.minimum(y1i, y2i)
+        ax.fill_between(xgrid, y_lower, y_upper, color=color, linewidth=0,  label = f"Layer {2}")
+
+    # Fill below the first curve down to a baseline (0 by default)
+    if layers and layers[0] in curves:
+        x0, y0 = curves[layers[0]]
+        xgrid = np.linspace(np.nanmin(x0), np.nanmax(x0), 201)
+        y0i = np.interp(xgrid, x0, y0)
+        ax.fill_between(xgrid, 0.0, y0i, color=area_colors[0], linewidth=0, label = "Layer 1")
+
+    # Fill between adjacent layers
+    for i in range(nL - 1):
+        L_low, L_high = layers[i], layers[i + 1]
+        if (L_low in curves) and (L_high in curves):
+            # extent upper curves to the right
+            x1, y1 = curves[L_low]
+            x1 = np.r_[x1, 2.0]
+            y1 = np.r_[y1, y[-1]]
+            x2, y2 = curves[L_high]
+            x2 = np.r_[x2, 2.0]
+            y2 = np.r_[y2, y[-1]]
+            _fill_between_curves(x1, y1, x2, y2, color=area_colors[i+1])
+
+    # Color top area
+    xt, yt = curves[layers[-1]]
+    xgrid = np.linspace(np.nanmin(xt), np.nanmax(xt), 401)
+    yti = np.interp(xgrid, xt, yt)
+    # if y_top not given, cap at max y in data or top curve
+    ycap = 0.02
+    ax.fill_between(xgrid, yti, ycap, color=area_colors[-1],
+                    linewidth=0, label=f"Above {layers[-1]}")
+
+    # After filling, draw black outlines for all layer curves
+    for L in layers:
+        if L in curves:
+            x, y = curves[L]
+            ax.plot(x, y, color="black", linewidth=1.0)
+
+    # Labels/legend
+    ax.set_xlabel(r"Energy scale $\epsilon$")
+    ax.set_ylabel(r"Growth rate $g$")
+    ax.legend(
+    title="Layers",
+    bbox_to_anchor=(1.05, 1),   # x, y position of the anchor
+    loc="upper left",           # position relative to the anchor
+    borderaxespad=0.)
+
+    # Tidy layout and save/show
+    if plot_filename:
+        outdir = os.path.dirname(plot_filename)
+        if outdir:
+            os.makedirs(outdir, exist_ok=True)
+        plt.savefig(plot_filename, dpi=300, bbox_inches="tight")
+        print(f"Figure saved to: {plot_filename}")
+    plt.show()
 
 if __name__ == "__main__":
     csv_filename = "Results/data/phase_transition_g_eps.csv"
@@ -271,4 +383,4 @@ if __name__ == "__main__":
     #append_higher_layers_bisect(g_upper = 0.02, phase_csv=csv_filename,
     #                            save_csv=save_csv)
     plot_filename = "Results/plots/phase_diagram.png"
-    plot_layer_phase_diagram(data=save_csv, plot_filename=plot_filename)
+    plot_layer_phase_diagram_seaborn(data=save_csv, plot_filename=plot_filename)

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.optimize import curve_fit
 import time
+import seaborn as sns
 import itertools
 import os
 import csv
@@ -250,8 +251,9 @@ def plot_widths(sweep_params, base_params = {}, T = 1000,
 
     plt.show()
 
-def replot_width(csv_filename, plot_filename = None, min_width = None, t_min = None, t_max = None, fit = False,
-                      x_col="t", y_col="width", series_params=None, xlog=False, ylog = False, scaling = False):
+def replot_width(csv_filename, csv_filename2 = None, plot_filename = None, min_width = None, t_min = None,
+                 t_max = None, fit = False, x_col="t", y_col="width", series_params=None,
+                 xlog=False, ylog = False, scaling = False, extend_to_t = 20000, y_max = 100):
     """
     Replot saved results. If series_params is None, uses all columns except x,y.
     """
@@ -278,7 +280,8 @@ def replot_width(csv_filename, plot_filename = None, min_width = None, t_min = N
 
     # group by parameter combinations
     grouped = df.groupby(series_params, dropna=False)
-
+    palette = sns.color_palette("colorblind", 5) # make a colorblind save scale
+    i = 0
     fig, ax = plt.subplots()
     for keys, sub in grouped:
         # build label
@@ -286,7 +289,10 @@ def replot_width(csv_filename, plot_filename = None, min_width = None, t_min = N
             keys = (keys,)
         label = ", ".join(f"{k}={v:g}" for k, v in zip(series_params, keys))
         sub_sorted = sub.sort_values(x_col)
-        ax.plot(sub_sorted[x_col].values, sub_sorted[y_col].values, label=label)
+        x_plot = sub_sorted[x_col].values
+        y_plot = sub_sorted[y_col].values
+        ax.plot(x_plot, y_plot, label=label, color = palette[i])
+        i += 1
 
         if fit:
             fit_sub = sub_sorted.copy()
@@ -333,6 +339,28 @@ def replot_width(csv_filename, plot_filename = None, min_width = None, t_min = N
                 print(f"Power-law fit {label}: y = {C_hat:.6g} * t^{p_hat:.6g}")
             except Exception as e:
                 print(f"[WARN] Power-law fit failed for {label}: {e}")
+
+    if csv_filename2:
+        df2 = pd.read_csv(csv_filename2)
+        if series_params is None:
+            exclude = {x_col, y_col, "t"}
+            series_params = [c for c in df.columns if c not in exclude]
+
+        # group by parameter combinations
+        grouped2 = df2.groupby(series_params, dropna=False)
+        for keys, sub in grouped2:
+            # build label
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            label = ", ".join(f"{k}={v:g}" for k, v in zip(series_params, keys))
+            sub_sorted = sub.sort_values(x_col)
+            x_plot = sub_sorted[x_col].values
+            y_plot = sub_sorted[y_col].values
+            x_plot = np.r_[x_plot, extend_to_t]
+            y_plot = np.r_[y_plot, y_max]
+            ax.plot(x_plot, y_plot, label=label, color = palette[i])
+            i +=1
+        
     ax.set_xlim(left = 0)
     ax.set_ylim(bottom = 0)
     ax.set_xlabel("Time (t)")
@@ -368,11 +396,11 @@ if __name__ == "__main__":
             'N': 2049
         }
         sweep_params = {
-            'g': [1e-4, 5*1e-4, 1e-3]
+            'g': [1e-4, 1e-3]
         }
 
-        plot_filename = "Results/plots/width_evolution_g_monolayer.png"
-        csv_filename = "Results/data/width_evolution_g_monolayer.csv"
+        plot_filename = "Results/plots/width_evolution_g_L200_monolayer.png"
+        csv_filename = "Results/data/width_evolution_g_L200_monolayer.csv"
 
         plot_widths(
             sweep_params=sweep_params,
@@ -383,7 +411,9 @@ if __name__ == "__main__":
         )
 
     elif choice == "b":
-        plot_filename = "Results/plots/width_evolution_g_Monolayer_log.png"
-        csv_filename = "Results/data/width_evolution_g_monolayer.csv"
+        plot_filename = "Results/plots/width_evolution_both_regimes.png"
+        csv_filename = "Results/data/width_evolution_g_L200_monolayer.csv"
+        csv_filename2 = "Results/data/width_evolution_g.csv"
 
-        replot_width(csv_filename=csv_filename, plot_filename=plot_filename, xlog = True, scaling=False, min_width=5, fit = False)
+        replot_width(csv_filename=csv_filename, csv_filename2=csv_filename2, plot_filename=plot_filename,
+                     xlog = False, scaling=False, min_width=5, fit = False)
