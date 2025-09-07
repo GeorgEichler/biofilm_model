@@ -203,12 +203,12 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
 if __name__ == "__main__":
     
-    params = {'amplitude': 1.0, 'g': 1, 'L': 200, 'N': 2048, 'epsilon': 1}
-    T = 2500
+    params = {'amplitude': 1.0, 'g': 1e-3, 'L': 100, 'N': 1024, 'epsilon': 1}
+    T = 2000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
     t_eval = np.linspace(0, T, 6)
-    """
+    
     h_init = model.setup_initial_conditions('gaussian')
     print(f"Baseline h_b ={model.h0 + 0.01}")
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)
@@ -222,15 +222,15 @@ if __name__ == "__main__":
         f = model.f
     )
 
-    plot_filename = 'thin_film_g10-1_eps1_t200_L200'
+    plot_filename = 'thin_film_g10-3_eps1_t2000'
     save_filename = "Results/values/thin_film_profile.npz"
-    """
+    
     figure_handler = fh.FigureHandler(model)
     #model.save_profile_values(times, H, save_filename)
-    #figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = None)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = plot_filename)
     
     #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
-    figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")
+    #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")
     #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
     #figure_handler.plot_free_energy(H, times)
 

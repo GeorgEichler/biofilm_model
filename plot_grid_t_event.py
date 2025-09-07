@@ -97,7 +97,7 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
             if i == 0:
                 ax.set_xlabel(fr"x, $\epsilon$ = {eps}")
             if j == 0:
-                ax.set_ylabel(fr"$h(x, t_{{event}})$" +"\n" + f"g = {g}")
+                ax.set_ylabel(fr"$h(x, t_{{complete}})$" +"\n" + f"g = {g}")
 
     if plot_filename:
         outdir = os.path.dirname(plot_filename)

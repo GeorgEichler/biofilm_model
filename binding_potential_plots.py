@@ -14,13 +14,19 @@ def h(x):
     # g(x) = 0.5 * ( -1/(2 x^2) + 0.3^3/(5 x^5) )
     return 0.5 * ( -1.0 / (2.0 * x**2) + (0.3**3) / (5.0 * x**5) )
 
+def k(x):
+    b = -0.5
+    #return 3*(1 / (x-b)**5 - 1/(x-b)**2 + np.exp(-(x-b)/3)*0.5)
+    return (1 / (x-b)**5 - 1.5/(x-b)**2 + np.exp(-(x-b)/3)**0.5)
+
+
 def main():
     # Domain (avoid x=0 to prevent division-by-zero)
-    x_min, x_max = 0.1, 4
+    x_min, x_max = 0.1, 5
     x = np.linspace(x_min, x_max, 10001)
 
     y_f = f(x)
-    y_g = g(x)
+    y_k = k(x)
     y_h = h(x)
     y_lo = -2
     y_hi = 2
@@ -32,11 +38,11 @@ def main():
     #axes[0].grid(True, alpha=0.3)
 
     # Plot g
-    axes[1].plot(x, y_g)
+    axes[1].plot(x, y_h)
     #axes[1].grid(True, alpha=0.3)
 
     # Plot h
-    axes[2].plot(x, y_h)
+    axes[2].plot(x, y_k)
     #axes[2].grid(True, alpha=0.3)
 
     # Shared axes labels & limits

@@ -47,7 +47,7 @@ def plot_first_layer_event_from_csv(csv_filename, filename_event_time = None, fi
     # Format height plot
     ax_h.set_xscale('log')
     ax_h.set_xlabel('Growth parameter (g)')
-    ax_h.set_ylabel('$h_{max}(t_{event})$')
+    ax_h.set_ylabel('$h_{max}(t_{complete})$')
     #ax_h.set_title('Height at middle of profile')
     ax_h.legend()
 
@@ -416,7 +416,7 @@ if __name__ == "__main__":
         
         plot_first_layer_event_from_csv("Results/data/first_layer_many_steps_wider_interval.csv",
                             filename_event_time=None,
-                            filename_height=None)
+                            filename_height=filename_height)
     else:
         print(f"There is no option {choice}!")
     
