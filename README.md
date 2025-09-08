@@ -1,7 +1,6 @@
-# Thin-film equation model for biofilms
-The goal of this project is to formulate a thin-film equations model simulating the emergence of biofilm layers and comparing the results to the 
-experimental observations from [Dhar et al.](https://www.nature.com/articles/s41567-022-01641-9).
-Using methods discussed in [Yin et al.](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.95.023104), we simulate the height of the biofilm using a thin-film equation of the form
+# A thin film model for the formation of biofilms
+This goal of this repository is to formulate a thin-film model simulating the development of a few layers of biofilms and analyse the
+the time evolution with regard to its parameter values. Based on ideas discussed in [Yin et al.](https://journals.aps.org/pre/abstract/10.1103/PhysRevE.95.023104) and [Pietz et al.](https://pubs.rsc.org/en/content/articlehtml/2025/sm/d4sm01463d), we formulate a thin-film equation of the form
 <p align=center>
 $\frac{\partial h}{\partial t} = \nabla \cdot \left(\cdot \nabla ( \nabla^2 h - \epsilon \Pi(h)) \right) + g (h - h_a) (1 - (h)/h_{max}) * (1 - \exp(h_f - h),$
 </p>
@@ -15,5 +14,6 @@ and is derived from the binding potential
 $f(h) = a \cos(hk+b)e^{-h/c} + d e^{-h/e}$
 </p>
 
-and its relation to the binding potential is given via $\Pi = - \partial g/\partial h$.
-This repository aims to examine the evolution of the binding film and explore transition points for different parameter sets as well as determine the speed of biofilm spreading.
+and its relation to the binding potential is given via $\Pi = - \partial g/\partial h$. Thereby, we interpret the first minimum of the binding potential as the precursor height and all the latter ones as as the first, second and so on minima.
+We analyse the time evolution of the thin-film equation for the width, maximal height and the time it takes until a second layer is formed with regard to the energy scale parameter $\epsilon$ and the growth rate $g$.
+
