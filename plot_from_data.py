@@ -84,8 +84,9 @@ def plot_critical_time_event_from_csv(csv_filename, xaxis_param='g', series_para
     if series_params:
         grouped = df.groupby(series_params)
         for series_key, group in grouped:
-            opacity = 0.5
-            if series_key[0] == 0.5 or series_key[0] == 2: continue
+            opacity = 0.7
+            # nasty way for not plotting all lines
+            #if series_key[0] == 0.5 or series_key[0] == 2: continue
             group = group.sort_values(by=xaxis_param)
             x_vals = group[xaxis_param].values
             t_vals = group['t_event'].values
@@ -380,11 +381,11 @@ if __name__ == "__main__":
 
     if choice == 'a':
         csv_path = "Results/data/critical_time_eps.csv"
-        plot_filename = "Results/plots/critical_time_log_log_fit.png"
+        plot_filename = "Results/plots/critical_time_log_log.png"
         plot_critical_time_event_from_csv(
             csv_filename=csv_path,
             plot_filename=plot_filename,
-            loglog=True, fit=True
+            loglog=True, fit=False
         )
 
     elif choice == 'b':

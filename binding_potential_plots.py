@@ -21,6 +21,14 @@ def k(x):
 
 
 def main():
+    plt.rcParams.update({
+            "axes.titlesize": 18,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 12,
+            "figure.dpi": 100 #change resolution, standard is 100
+        })
     # Domain (avoid x=0 to prevent division-by-zero)
     x_min, x_max = 0.1, 5
     x = np.linspace(x_min, x_max, 10001)

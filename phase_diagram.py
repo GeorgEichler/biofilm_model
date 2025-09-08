@@ -287,7 +287,7 @@ def plot_layer_phase_diagram_seaborn(
     first_color = sns.color_palette("Greens", n_colors = 3)[2] # medium green
     blue_colors = sns.color_palette("Blues", n_colors = nL) 
     area_colors = [first_color] + blue_colors
-    layer_name = ["1 Layer", "2 Layer", "3 Layer", "4 Layer"]
+    layer_name = ["1 Layer", "2 Layers", "3 Layers", "4 Layers"]
 
     # Prepare curves per layer (sorted in x)
     curves = {}

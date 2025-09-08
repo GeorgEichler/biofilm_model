@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 import time
+from matplotlib.ticker import ScalarFormatter
 
 def plot_event_profiles_grid(
         g_values, epsilon_values,
@@ -78,6 +79,10 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
     ncols, nrows = len(epsilon_values), len(g_values)
     fig, axes = plt.subplots(nrows, ncols, figsize=(7.5, 10.5), sharex=True, sharey=True)
 
+    sci_formatter = ScalarFormatter(useMathText=True)
+    sci_formatter.set_scientific(True)
+    sci_formatter.set_powerlimits((0, 0))  # force sci notation
+
     for i, g in enumerate(g_values):
         for j, eps in enumerate(epsilon_values):
             ax = axes[nrows - 1 - i, j]
@@ -94,10 +99,15 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
             ax.set_xlim(0, 100)
             ax.set_ylim(0, 5.5)
 
+            g_str = sci_formatter.format_data(g)
+
             if i == 0:
                 ax.set_xlabel(fr"x, $\epsilon$ = {eps}")
             if j == 0:
-                ax.set_ylabel(fr"$h(x, t_{{complete}})$" +"\n" + f"g = {g}")
+                if g == 10:
+                    ax.set_ylabel(fr"$h(x, t_{{complete}})$" +"\n" + fr"$g = {g}$")
+                else:
+                    ax.set_ylabel(fr"$h(x, t_{{complete}})$" +"\n" + fr"$g = {g_str}$")
 
     if plot_filename:
         outdir = os.path.dirname(plot_filename)
@@ -121,4 +131,4 @@ if __name__ == "__main__":
         _, _, _, x = run_until_first_layer({'epsilon': 0, 'g': 10})
         csv_filename = "Results/data/event_profiles.csv"
         plot_filename = "Results/plots/event_profiles.png"
-        replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values, plot_filname=plot_filename)
+        replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values, plot_filname=None)

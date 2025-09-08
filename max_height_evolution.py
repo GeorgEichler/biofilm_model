@@ -5,6 +5,7 @@ import seaborn as sns
 import time
 import os
 import itertools
+from matplotlib.ticker import ScalarFormatter
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
 
@@ -131,12 +132,22 @@ def replot_max_height(csv_filename, plot_filename = None,
 
     fig, ax = plt.subplots()
     palette = sns.color_palette("colorblind", 5)
+
+    sci_formatter = ScalarFormatter(useMathText=True)
+    sci_formatter.set_powerlimits((-2, 2))  # always use 10^n if outside [-2, 2]
+
     i = 0
     for keys, sub in grouped:
         # build label
         if not isinstance(keys, tuple):
             keys = (keys,)
-        label = ", ".join(f"{k}={v:g}" for k, v in zip(series_params, keys))
+
+        label_parts = []
+        for k, v in zip(series_params, keys):
+            val = sci_formatter.format_data(v)
+            label_parts.append(fr"{k}=${val}$")
+        label = ", ".join(label_parts)
+
         sub_sorted = sub.sort_values(x_col)
         linestyle = "-"
         if keys[0] == 1e-4:
@@ -168,80 +179,16 @@ def replot_max_height(csv_filename, plot_filename = None,
 
     plt.show()
 
-def replot_max_height_seaborn(csv_filename, plot_filename = None, 
-                      x_col="t", y_col="h_max", series_params=None, loglog=False, scaling = False):
-    """
-    Replot saved results. If series_params is None, uses all columns except x,y.
-    """
-    df = pd.read_csv(csv_filename)
-    g_array = df["g"].values.unique()
-    # Apply scaling rule
-    if scaling:
-        g_vals = df["g"].values
-        t_vals = df[x_col].values
-
-        df["t_scaled"] = g_vals * t_vals
-
-        x_col = "t_scaled"
-
-    if loglog:
-        df = df[df[x_col] >= 1]
-
-    if series_params is None:
-        exclude = {x_col, y_col, "t"}
-        series_params = [c for c in df.columns if c not in exclude]
-
-    # group by parameter combinations
-    grouped = df.groupby(series_params, dropna=False)
-
-    sns.set_style("white")
-
-    fig, ax = plt.subplots()
-    norm = plt.Normalize(df["g"].min(), df["g"].max())
-    cmap = sns.color_palette(palette = "crest", as_cmap=True)
-    for keys, sub in grouped:
-        # build label
-        if not isinstance(keys, tuple):
-            keys = (keys,)
-        label = ", ".join(f"{k}={v:g}" for k, v in zip(series_params, keys))
-        sub_sorted = sub.sort_values(x_col)
-        color = cmap(norm(keys))
-        linestyle = "solid"
-        if keys == 1e-4:
-            linestyle = "-"
-        if keys == 1e-3:
-            linestyle = '--'
-        ax.plot(sub_sorted[x_col].values, sub_sorted[y_col].values, color = color,
-                linestyle = linestyle)
-
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm = norm)
-    sm.set_array([])
-    cbar = fig.colorbar(sm, ax = ax)
-    cbar.set_ticks(g_array)
-    cbar.set_ticklabels([f"{g}" for g in g_array])
-    cbar.set_label("g")
-    ax.set_ylim()
-    ax.set_xlabel("Time (t)")
-    ax.set_ylabel("$h_{max}(t)$")
-    if scaling:
-        ax.set_xlabel("$t*g$")
-        ax.set_xlim(0, 25)
-    if loglog:
-        ax.set_xscale('log')
-        ax.set_xlim(left = 1)
-    ax.legend()
-
-    if plot_filename:
-        output_dir = os.path.dirname(plot_filename)
-        if output_dir:
-            os.makedirs(output_dir, exist_ok = True)
-        plt.savefig(plot_filename, dpi = 300, bbox_inches = 'tight')
-        print(f"Saved figure to: {plot_filename}")
-
-    plt.show()
 
 if __name__ == '__main__':
-
+    plt.rcParams.update({
+            "axes.titlesize": 18,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 12,
+            "figure.dpi": 100 #change resolution, standard is 100
+        })
     choice = input("Do max height evolution (a) or replot from data (b): ")
 
     if choice == "a":
@@ -267,8 +214,8 @@ if __name__ == '__main__':
     elif choice == "b":
         #csv_filename = "Results/data/max_height_evolution_g_both_regimes.csv"
         #plot_filename = "Results/plots/max_height_evolution_g_both_regimes.png"
-        csv_filename = "Results/data/max_height_evolution_g_t2500.csv"
-        plot_filename = "Results/plots/max_height_evolution_g_t2500_log.png"
+        csv_filename = "Results/data/max_height_evolution_g_both_regimes.csv"
+        plot_filename = "Results/plots/max_height_evolution_g_both_regimes.png"
 
-        replot_max_height(csv_filename = csv_filename, plot_filename=plot_filename, loglog=True, scaling=False)
+        replot_max_height(csv_filename = csv_filename, plot_filename=plot_filename, loglog=False, scaling=False)
         

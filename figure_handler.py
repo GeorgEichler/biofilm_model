@@ -88,6 +88,13 @@ class FigureHandler:
         df = pd.DataFrame(results)
 
         sns.set_theme(style = "white")
+        plt.rcParams.update({
+            "axes.titlesize": 18,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 14,
+        })
         cmap = sns.color_palette(palette = "crest", as_cmap=True)
         fig, ax = plt.subplots()
         sns.lineplot(

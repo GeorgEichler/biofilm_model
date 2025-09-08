@@ -9,6 +9,7 @@ import os
 import csv
 
 from OneD_FDM_simple_model import FDM_OneD_Thin_Film_Model
+from matplotlib.ticker import ScalarFormatter
 from helper_functions import find_first_k_minima
 
 # models
@@ -281,13 +282,23 @@ def replot_width(csv_filename, csv_filename2 = None, plot_filename = None, min_w
     # group by parameter combinations
     grouped = df.groupby(series_params, dropna=False)
     palette = sns.color_palette("colorblind", 5) # make a colorblind save scale
+
+    sci_formatter = ScalarFormatter(useMathText=True)
+    sci_formatter.set_powerlimits((-2, 2))
+
     i = 0
     fig, ax = plt.subplots()
     for keys, sub in grouped:
         # build label
         if not isinstance(keys, tuple):
             keys = (keys,)
-        label = ", ".join(f"{k}={v:g}" for k, v in zip(series_params, keys))
+
+        label_parts = []
+        for k, v in zip(series_params, keys):
+            val = sci_formatter.format_data(v)
+            label_parts.append(fr"{k}=${val}$")
+        label = ", ".join(label_parts)
+        
         sub_sorted = sub.sort_values(x_col)
         x_plot = sub_sorted[x_col].values
         y_plot = sub_sorted[y_col].values
@@ -352,7 +363,13 @@ def replot_width(csv_filename, csv_filename2 = None, plot_filename = None, min_w
             # build label
             if not isinstance(keys, tuple):
                 keys = (keys,)
-            label = ", ".join(f"{k}={v:g}" for k, v in zip(series_params, keys))
+
+            label_parts = []
+            for k, v in zip(series_params, keys):
+                val = sci_formatter.format_data(v)
+                label_parts.append(fr"{k}=${val}$")
+            label = ", ".join(label_parts)
+        
             sub_sorted = sub.sort_values(x_col)
             x_plot = sub_sorted[x_col].values
             y_plot = sub_sorted[y_col].values
@@ -387,6 +404,15 @@ def replot_width(csv_filename, csv_filename2 = None, plot_filename = None, min_w
     plt.show()
 
 if __name__ == "__main__":
+    plt.rcParams.update({
+            "axes.titlesize": 18,
+            "axes.labelsize": 16,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 12,
+            "figure.dpi": 100 #change resolution, standard is 100
+        })
+    
     choice = input("Width simulation (a) or replot from data (b): ")
     
     if choice == "a":
@@ -411,9 +437,9 @@ if __name__ == "__main__":
         )
 
     elif choice == "b":
-        plot_filename = "Results/plots/width_evolution_both_regimes.png"
-        csv_filename = "Results/data/width_evolution_g_L200_monolayer.csv"
+        plot_filename = "Results/plots/width_evolution_g_log.png"
+        csv_filename = "Results/data/width_evolution_g.csv"
         csv_filename2 = "Results/data/width_evolution_g.csv"
 
-        replot_width(csv_filename=csv_filename, csv_filename2=csv_filename2, plot_filename=plot_filename,
-                     xlog = False, scaling=False, min_width=5, fit = False)
+        replot_width(csv_filename=csv_filename, csv_filename2=None, plot_filename=plot_filename,
+                     xlog = True, scaling=False, min_width=5, fit = False)
