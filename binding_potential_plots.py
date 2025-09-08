@@ -34,7 +34,7 @@ def main():
     x = np.linspace(x_min, x_max, 10001)
 
     y_f = f(x)
-    y_k = k(x)
+    y_g = g(x)
     y_h = h(x)
     y_lo = -2
     y_hi = 2
@@ -50,7 +50,7 @@ def main():
     #axes[1].grid(True, alpha=0.3)
 
     # Plot h
-    axes[2].plot(x, y_k)
+    axes[2].plot(x, y_g)
     #axes[2].grid(True, alpha=0.3)
 
     # Shared axes labels & limits
