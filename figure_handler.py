@@ -103,6 +103,7 @@ class FigureHandler:
             palette=cmap, hue_norm=(times.min(), times.max()),
             ax = ax, legend = False
         )
+        
 
         if pot_minima is not None:
             for y in pot_minima:
@@ -116,6 +117,7 @@ class FigureHandler:
         cbar.set_ticks(times)
         cbar.set_ticklabels([f"{int(t)}" for t in times])
         cbar.set_label("t")
+        
         ax.set_xlabel('x')
         ax.set_ylabel('h(x,t)')
         ax.set_xlim(0, self.model.params['L'])

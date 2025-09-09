@@ -210,11 +210,12 @@ if __name__ == "__main__":
             "legend.fontsize": 14,
             "figure.dpi": 100 #change resolution, standard is 100
         })
-    params = {'amplitude': 1.0, 'g': 1e-3, 'L': 100, 'N': 1024, 'epsilon': 0.5}
-    T = 20000
+    params = {'amplitude': 1.0, 'g': 1e-2, 'L': 100, 'N': 1024, 'epsilon': 1}
+    T = 1600
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
     t_eval = np.linspace(0, T, 6)
+    t_eval = [T]
     
     h_init = model.setup_initial_conditions('gaussian')
     print(f"Baseline h_b ={model.h0 + 0.01}")
@@ -230,12 +231,12 @@ if __name__ == "__main__":
     )
 
     plot_filename = 'thin_film_g10-2_multilayer_regime'
-    plot_filename = 'breakdown_solution'
+    plot_filename = 'thin_film_g10-2_title_image'
     save_filename = "Results/values/thin_film_profile.npz"
     
     figure_handler = fh.FigureHandler(model)
     #model.save_profile_values(times, H, save_filename)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = None)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = plot_filename)
     
     #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
     #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")

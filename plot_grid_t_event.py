@@ -80,7 +80,7 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
     df = pd.read_csv(csv_filename)
 
     ncols, nrows = len(epsilon_values), len(g_values)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(7.5, 10.5), sharex=True, sharey=True)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(12, 4), sharex=True, sharey=True) # 7.5, 10.5 for big grid
 
     sci_formatter = ScalarFormatter(useMathText=True)
     sci_formatter.set_scientific(True)
@@ -88,9 +88,9 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
 
     for i, g in enumerate(g_values):
         for j, eps in enumerate(epsilon_values):
-            ax = axes[nrows - 1 - i, j]
+            #ax = axes[nrows - 1 - i, j]
             # use if axis only one dimensional
-            #ax = axes[j]
+            ax = axes[j]
             row = df[(df['g']==g) & (df['epsilon']==eps)]
             if row.empty or pd.isna(row['t_event'].values[0]):
                 ax.text(0.5, 0.5, 'No event', ha='center', va='center', transform=ax.transAxes)
@@ -100,7 +100,7 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
             h_cols = [c for c in row.columns if c.startswith("h_")]
             h_event = row[h_cols].values[0]
             ax.plot(x, h_event)
-            #ax.set_title(f"g={g}, ε={eps}, $t_{{event}}$={row['t_event'].values[0]:.3g}")
+            ax.set_title(f"ε={eps}")
             ax.set_xlim(0, 100)
             ax.set_ylim(0, 5.5)
 
@@ -108,6 +108,7 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
 
             if i == 0:
                 ax.set_xlabel(fr"x, $\epsilon$ = {eps}")
+                ax.set_xlabel("x")
             if j == 0:
                 if g == 10:
                     ax.set_ylabel(fr"$h(x, t_{{complete}})$" +"\n" + fr"$g = {g}$")
@@ -127,8 +128,9 @@ if __name__ == "__main__":
     choice = input("Profile simulation (a) or plotting (b): ")
     # make this more general
     g_values = [1e-3, 1e-2, 1e-1, 1, 10]
-    #g_values = [1e-2]
+    g_values = [1e-2]
     epsilon_values = [0.5, 1, 1.5, 2]
+    epsilon_values = [2, 1.5, 1, 0.5]
 
     if choice == "a":
 
@@ -139,6 +141,6 @@ if __name__ == "__main__":
         # get grid for plotting
         _, _, _, x = run_until_first_layer({'epsilon': 0, 'g': 10})
         csv_filename = "Results/data/event_profiles.csv"
-        #csv_filename = "Results/data/event_profiles_g1e-2.csv"
-        plot_filename = "Results/plots/event_profiles.png"
+        csv_filename = "Results/data/event_profiles_g1e-2.csv"
+        plot_filename = "Results/plots/event_profiles_g1e-1.png"
         replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values, plot_filename=plot_filename)
