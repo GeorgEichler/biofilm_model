@@ -10,7 +10,7 @@ def plot_event_profiles_grid(
         base_params = {}, T = 50000,
         method = 'LSODA', init_type = 'gaussian',
         plot_filename = None,
-        csv_filename = "Results/data/event_profiles.csv"):
+        csv_filename = None):
     g_values = list(g_values)
     epsilon_values = list(epsilon_values)
 
@@ -25,7 +25,9 @@ def plot_event_profiles_grid(
 
     for i, g in enumerate(g_values):
         for j, eps in enumerate(epsilon_values):
-            ax = axes[len(g_values) - 1 - i, j]
+            #ax = axes[len(g_values) - 1 - i, j]
+            # set this if axis is one dimensional
+            ax = axes[j]
             params = {**base_params, 'g': g, 'epsilon': eps}
 
             param_str = ', '.join([f"{k}={v:.4g}" for k, v in params.items()])
@@ -59,9 +61,10 @@ def plot_event_profiles_grid(
     end_time = time.time()
     print(f"\nFull simulation time: {end_time - start_time:.2f}s.")
 
-    df = pd.DataFrame(results)
-    df.to_csv(csv_filename, index = False)
-    print(f"Data saved to: {csv_filename}")
+    if csv_filename:
+        df = pd.DataFrame(results)
+        df.to_csv(csv_filename, index = False)
+        print(f"Data saved to: {csv_filename}")
 
     if plot_filename:
         outdir = os.path.dirname(plot_filename)
@@ -73,7 +76,7 @@ def plot_event_profiles_grid(
     plt.show()
 
 def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
-                                   plot_filname = None):
+                                   plot_filename = None):
     df = pd.read_csv(csv_filename)
 
     ncols, nrows = len(epsilon_values), len(g_values)
@@ -86,6 +89,8 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
     for i, g in enumerate(g_values):
         for j, eps in enumerate(epsilon_values):
             ax = axes[nrows - 1 - i, j]
+            # use if axis only one dimensional
+            #ax = axes[j]
             row = df[(df['g']==g) & (df['epsilon']==eps)]
             if row.empty or pd.isna(row['t_event'].values[0]):
                 ax.text(0.5, 0.5, 'No event', ha='center', va='center', transform=ax.transAxes)
@@ -120,15 +125,20 @@ def replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values,
 
 if __name__ == "__main__":
     choice = input("Profile simulation (a) or plotting (b): ")
+    # make this more general
     g_values = [1e-3, 1e-2, 1e-1, 1, 10]
+    #g_values = [1e-2]
     epsilon_values = [0.5, 1, 1.5, 2]
 
     if choice == "a":
 
-        plot_event_profiles_grid(g_values, epsilon_values)
+        csv_filename = "Results/data/event_profiles_g1e-2.csv"
+        plot_event_profiles_grid(g_values, epsilon_values, csv_filename=csv_filename)
     
     elif choice == "b":
+        # get grid for plotting
         _, _, _, x = run_until_first_layer({'epsilon': 0, 'g': 10})
         csv_filename = "Results/data/event_profiles.csv"
+        #csv_filename = "Results/data/event_profiles_g1e-2.csv"
         plot_filename = "Results/plots/event_profiles.png"
-        replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values, plot_filname=None)
+        replot_event_profiles_from_csv(csv_filename, x, g_values, epsilon_values, plot_filename=plot_filename)
