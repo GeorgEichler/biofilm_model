@@ -2,7 +2,7 @@ import time
 
 class SolveIVPProgressWrapper:
     """
-    A wrapper to show the progress of the solve_ivp function
+    A wrapper to show the progress of the solve_ivp function in %
     """
     def __init__(self, rhs_func, t_end, report_step_percent = 1):
         self.rhs_func = rhs_func

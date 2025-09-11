@@ -7,55 +7,11 @@ from helper_functions import find_first_k_minima
 from solver_wrapper import SolveIVPProgressWrapper
 import figure_handler as fh
 import time
-from numba import njit
-
-# Cannot use class methods or dictionaries for njitted functions
-@njit
-def _rhs_stencil_numba(h, dx, N, epsilon, g, h_max, h0, h_a, a, b, c, d, e, k):
-    """RHS calculation using direct stencils, optimized with Numba."""
-    
-    flux = np.empty_like(h)
-    dx2 = dx * dx
-
-    # --- Main loop with stencil fusion ---
-    for i in range(N):
-        # Get indices for a 5-point stencil window (for the ∇⁴ operator)
-        i_p2 = (i + 2) % N
-        i_p1 = (i + 1) % N
-        i_m1 = (i - 1 + N) % N
-        i_m2 = (i - 2 + N) % N
-
-        # --- On-the-fly calculation of mu for points i-1, i, i+1 ---
-        
-        # mu at point i-1
-        h_xx_im1 = (h[i] - 2 * h[i_m1] + h[i_m2]) / dx2
-        pi_im1 = a * np.exp(-h[i_m1]/c) * (k * np.sin(h[i_m1]*k+b) + 1/c*np.cos(h[i_m1]*k+b)) + d/e*np.exp(-h[i_m1]/e)
-        mu_im1 = -epsilon * pi_im1 - h_xx_im1
-
-        # mu at point i
-        h_xx_i = (h[i_p1] - 2 * h[i] + h[i_m1]) / dx2
-        pi_i = a * np.exp(-h[i]/c) * (k * np.sin(h[i]*k+b) + 1/c*np.cos(h[i]*k+b)) + d/e*np.exp(-h[i]/e)
-        mu_i = -epsilon * pi_i - h_xx_i
-
-        # mu at point i+1
-        h_xx_ip1 = (h[i_p2] - 2 * h[i_p1] + h[i]) / dx2
-        pi_ip1 = a * np.exp(-h[i_p1]/c) * (k * np.sin(h[i_p1]*k+b) + 1/c*np.cos(h[i_p1]*k+b)) + d/e*np.exp(-h[i_p1]/e)
-        mu_ip1 = -epsilon * pi_ip1 - h_xx_ip1
-        
-        # --- Calculate flux at point i using the on-the-fly mu values ---
-        flux[i] = (mu_ip1 - 2 * mu_i + mu_im1) / dx2
-
-    # Source term is calculated in a separate loop as it's purely local
-    source = np.empty_like(h)
-    for i in range(N):
-        hi = h[i]
-        source[i] = g * (1.0 - hi / h_max) * (hi - h_a) * (1.0 - np.exp(h0 - hi))
-
-    return flux + source
 
 class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
     """
-    Solve thin film equation using finite difference method
+    Solve thin film equation using finite difference method and solve_ivp
+    funcion for time stepping
     """
 
     def __init__(self, use_numba = False, **kwargs):
@@ -64,7 +20,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         super().__init__(**kwargs)
 
     def _setup_numerical_operators(self):
-        """Define sparse finite difference matrices"""
+        """Define sparse finite difference matrices for first and second derivative"""
         N = self.params['N']
 
         # First derivative with periodic boundary conditions, also needed for free energy
@@ -94,8 +50,9 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
     
     def _event_mean_height_first_layer(self, t, h):
         """
-        Event function for solve_ivp
-        Triggers when mean height of thin film reaches first layer
+        Event function, which triggers when the area under the curve is equal one complete
+        layer on a given interval
+        To investigate the mono-to-multilayer transition and critical growth rate
         """
         x = self.x
         L = self.params['L']
@@ -114,17 +71,16 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         # Event occurs when mean height equal to the height of first layer
         return mean_h - (self.h1 - self.h0)
     
-    # We need to tell the solver to stop when this event occurs.
-    # We do this by setting an attribute on the function object itself.
+    # tell solve_ivp to stop once event occurs
     _event_mean_height_first_layer.terminal = True
 
-    # We also want the event to trigger only when mean(h) is increasing through 1.
-    # This prevents it from triggering if the mean somehow starts above 1 and decreases.
-    _event_mean_height_first_layer.direction = 1 # Trigger when event function goes from - to +
+    # trigger once event function foes from - to +
+    _event_mean_height_first_layer.direction = 1 
     
     def _event_layer_transition(self, t, h):
         """
         Event function for solve_ivp triggers when the height of 2nd layer is reached
+        to investigate mono-to-multilayer transition
         """
 
         return np.max(h) - self.h2 
@@ -133,8 +89,11 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
 
     _event_layer_transition.direction = 1
 
-    def _rhs_scipy(self, t, h):
-        """RHS for finite difference method using scipy matrices"""
+    def rhs(self, t, h):
+        """RHS for finite difference method using scipy matrices given by
+        -\Delta^2 h - \Delta \epsilon \Pi(h) + G(h)
+        possible to choose another non-dimensionalisation with another mobility coefficient 
+        """
         p = self.params
         a = p['a']; b = p['b']; c = p['c']; d = p['d']; e = p['e']; k = p['k']
         Pi_h = a * np.exp(-h/c) * (k * np.sin(h * k + b) + 1/c * np.cos(h * k + b)) + d/e*np.exp(-h/e)
@@ -151,17 +110,6 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         #flux = self.D @ (h**3 * mu_x)
         return flux + growth
 
-
-    # Right hand side of PDE
-    def rhs(self, t, h):
-        if self.use_numba:
-            p = self.params
-            # Numba function is called with parameters unpacked from the dict
-            return _rhs_stencil_numba(h, self.dx, p['N'], p['epsilon'], 
-                                  p['g'], p['h_max'], self.h0, self.ha, p['a'], p['b'], 
-                                  p['c'], p['d'], p['e'], p['k'])
-        else:
-            return self._rhs_scipy(t, h)
         
     # Good possible methods due to the stiffness are LSODA, BDF or Radau
     def solve(self, h0, T = 10, method = 'LSODA', t_eval = None, event = None):
@@ -196,7 +144,7 @@ class FDM_OneD_Thin_Film_Model(OneD_Base_Model):
         if sol.status == 1:
             print(f"Event triggered: Mean first layer reached at t = {sol.t_events[0][0]:.4f}")
         elif sol.status == 0:
-            print("Integration finished because the end time T was reached.")
+            print(f"Integration finished because the final time T={T} was reached.")
 
         return sol.t, sol.y
 
@@ -211,36 +159,28 @@ if __name__ == "__main__":
             "figure.dpi": 100 #change resolution, standard is 100
         })
     params = {'amplitude': 1.0, 'g': 1e-2, 'L': 100, 'N': 1024, 'epsilon': 1}
-    T = 1600
+    T = 1000
     model = FDM_OneD_Thin_Film_Model(use_numba= False, **params)
     #t_eval = [500, 1000, 1250, 1500, 1750, 2000, 2250, 2500]
     t_eval = np.linspace(0, T, 6)
-    t_eval = [T]
     
     h_init = model.setup_initial_conditions('gaussian')
     print(f"Baseline h_b ={model.h0 + 0.01}")
     times, H = model.solve(h_init, T = T, t_eval = t_eval, method = 'LSODA', event = False)
+     
     
-    #h_final = H[:, -1]
-    #model.params['g'] = 0
-    #times, H = model.solve(h_final, T, t_eval = t_eval)    
-    
+    # Calculate minima to plot the as dashed lines on the evolution plot
     h_mins, g1_mins = find_first_k_minima(
         k_minima=5, 
         f = model.f
     )
 
     plot_filename = 'thin_film_g10-2_multilayer_regime'
-    plot_filename = 'thin_film_g10-2_title_image'
     save_filename = "Results/values/thin_film_profile.npz"
     
     figure_handler = fh.FigureHandler(model)
     #model.save_profile_values(times, H, save_filename)
-    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = plot_filename)
+    figure_handler.plot_profiles(H.T, times, pot_minima = h_mins, plot_filename = None)
     
-    #figure_handler.plot_binding_energy(model.f, filename = "binding_potential")
-    #figure_handler.plot_growth_function(model.growth_term, filename = "growth_function")
-    #print(f"Minima of g\u2081 are found at {h_mins} \n with values {g1_mins}.")
-    #figure_handler.plot_free_energy(H, times)
 
     plt.show()

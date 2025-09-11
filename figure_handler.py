@@ -6,7 +6,7 @@ import os
 from OneD_thin_film_model import OneD_Base_Model
 class FigureHandler:
     """
-    Handling of plots for the thin-film equation model
+    Handling of time evolution plots for the thin-film equation model
     """
     def __init__(self, model:OneD_Base_Model, output_dir: str = "Results/plots"):
         self.model = model

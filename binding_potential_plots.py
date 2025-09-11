@@ -21,6 +21,10 @@ def k(x):
 
 
 def main():
+    """
+    Plot different binding potentials used for the complete wetting and
+    partially wetting case
+    """
     plt.rcParams.update({
             "axes.titlesize": 18,
             "axes.labelsize": 16,
